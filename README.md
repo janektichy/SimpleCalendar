@@ -1,24 +1,7 @@
-# README
+# Calendar (Ruby on Rails)
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+This project is a simple Ruby on Rails calendar application with basic scheduling functionality.
 
-Things you may want to cover:
+It is built as a practice project to try out Ruby and Rails fundamentals.
 
-* Ruby version
-
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+The main goal is to experiment with Rails concepts in a clean, focused app while building practical experience with the framework.
