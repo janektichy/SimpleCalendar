@@ -1,0 +1,38 @@
+<% content_for :title, "Sign in" %>
+
+<div class="auth-form">
+  <div class="auth-form__header">
+    <span class="auth-form__eyebrow">Welcome back</span>
+    <h1>Sign in to Simple Calendar</h1>
+    <p>Open your calendar to stay aligned with the week ahead.</p>
+  </div>
+
+  <% if @user.errors.any? %>
+    <div class="form-errors">
+      <ul>
+        <% @user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @user, url: session_path, class: "form", local: true do |form| %>
+    <div class="form__group">
+      <%= form.label :email %>
+      <%= form.email_field :email, required: true, autofocus: true, placeholder: "E.g. johndoe@email.com" %>
+    </div>
+
+    <div class="form__group">
+      <%= form.label :password %>
+      <%= form.password_field :password, required: true, placeholder: "Enter your password" %>
+    </div>
+
+    <%= form.submit "Sign in", class: "button button--primary" %>
+  <% end %>
+
+  <div class="auth-form__footer">
+    <span>Need an account?</span>
+    <%= link_to "Create an account", new_registration_path %>
+  </div>
+</div>

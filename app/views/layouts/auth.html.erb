@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Simple Calendar" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.svg">
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="body--public">
+    <div class="auth-shell">
+      <div class="auth-panel">
+        <div class="auth-panel__brand">
+          <span class="auth-panel__brand-text">Simple Calendar</span>
+          <span class="auth-panel__brand-tagline">Keep your schedule light and clear</span>
+        </div>
+        <%= yield %>
+      </div>
+      <% if flash.any? { |_, message| message.present? } %>
+        <div class="auth-shell__flash">
+          <%= render "shared/flash" %>
+        </div>
+      <% end %>
+    </div>
+  </body>
+</html>

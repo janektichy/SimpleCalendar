@@ -1,0 +1,46 @@
+<% content_for :page_title, "Simple Calendar" %>
+
+<% today = Time.zone.today %>
+<% current_month_start = today.beginning_of_month %>
+<% calendar_start = current_month_start.beginning_of_week(:monday) %>
+<% calendar_end = current_month_start.end_of_month.end_of_week(:monday) %>
+<% days = (calendar_start..calendar_end).to_a.in_groups_of(7) %>
+
+<div class="calendar-shell">
+  <div class="calendar-shell__header">
+    <div class="calendar-shell__left">
+      <div class="calendar-shell__nav">
+        <button type="button" class="calendar-shell__nav-button" disabled aria-label="Previous month">‹</button>
+        <button type="button" class="calendar-shell__nav-button" disabled aria-label="Next month">›</button>
+      </div>
+      <span class="calendar-shell__month"><%= current_month_start.strftime("%B %Y") %></span>
+    </div>
+    <div class="calendar-shell__options">
+      <div class="calendar-toggle" role="group" aria-label="Calendar view toggle">
+        <button type="button" class="is-active">Month</button>
+        <button type="button">Week</button>
+      </div>
+      <%= link_to "Add event", "#", class: "button button--primary" %>
+    </div>
+  </div>
+
+  <div class="calendar-weekdays">
+    <% %w[Mon Tue Wed Thu Fri Sat Sun].each do |day_name| %>
+      <span><%= day_name %></span>
+    <% end %>
+  </div>
+
+  <div class="calendar-grid" role="grid" aria-label="Monthly calendar">
+    <% days.each do |week| %>
+      <div class="calendar-grid__row" role="row">
+        <% week.each do |date| %>
+          <% classes = ["calendar-cell"] %>
+          <% classes << "calendar-cell--muted" if date.month != current_month_start.month %>
+          <div class="<%= classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>">
+            <span><%= date.day %></span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,149 @@
+.body--public {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+}
+
+.auth-shell {
+  width: min(480px, 100%);
+}
+
+.auth-panel {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 3rem;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.auth-shell__flash {
+  margin-top: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-shell__flash .flash {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.auth-panel__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.auth-panel__brand-text {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.auth-panel__brand-tagline {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.7rem;
+}
+
+.auth-form__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.auth-form__eyebrow {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.auth-form__header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 600;
+}
+
+.auth-form__header p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.auth-form__footer {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+}
+
+.form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form__group label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.form__group input {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form__group input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(16, 20, 24, 0.1);
+  background: var(--surface);
+}
+
+.form__hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.form-errors {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.12);
+  padding: 1rem 1.2rem;
+  color: #b91c1c;
+  font-size: 0.88rem;
+}
+
+.form-errors ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+@media (max-width: 640px) {
+  .body--public {
+    padding: 1.6rem;
+  }
+
+  .auth-panel {
+    padding: 2.4rem 1.8rem;
+  }
+}

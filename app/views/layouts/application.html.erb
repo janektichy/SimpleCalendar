@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "First Rails App" %></title>
+    <title><%= content_for(:title) || "Simple Calendar" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="First Rails App">
+    <meta name="application-name" content="Calendar">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -14,16 +14,48 @@
     <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="apple-touch-icon" href="/icon.svg">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <%= yield %>
+  <body class="<%= user_signed_in? ? "body--app" : "body--public" %>">
+    <% if user_signed_in? %>
+      <div class="app-shell">
+        <aside class="sidebar">
+          <div class="sidebar__brand">
+            <span class="sidebar__brand-text">Simple Calendar</span>
+            <span class="sidebar__brand-tagline">Plan the essentials at a glance</span>
+          </div>
+          <nav class="sidebar__nav">
+            <%= link_to "Calendar", calendar_path, class: sidebar_link_class(calendar_path) %>
+            <%= link_to "Upcoming", upcoming_path, class: sidebar_link_class(upcoming_path) %>
+            <%= link_to "Settings", settings_path, class: sidebar_link_class(settings_path) %>
+          </nav>
+          <div class="sidebar__footer">
+            <span class="sidebar__user"><%= current_user.email %></span>
+            <%= button_to "Log out", session_path, method: :delete, class: "button button--ghost" %>
+          </div>
+        </aside>
+
+        <main class="main">
+          <header class="main__header">
+            <div>
+              <h1 class="main__title"><%= content_for?(:page_title) ? yield(:page_title) : "Simple Calendar" %></h1>
+              <p class="main__subtitle">A focused calendar to keep the essentials in view.</p>
+            </div>
+          </header>
+          <section class="main__content">
+            <%= render "shared/flash" %>
+            <%= yield %>
+          </section>
+        </main>
+      </div>
+    <% else %>
+      <%= render "shared/flash" %>
+      <%= yield %>
+    <% end %>
   </body>
 </html>

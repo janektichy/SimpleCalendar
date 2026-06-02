@@ -1,0 +1,44 @@
+<% content_for :title, "Create account" %>
+
+<div class="auth-form">
+  <div class="auth-form__header">
+    <span class="auth-form__eyebrow">Create account</span>
+    <h1>Join Simple Calendar</h1>
+    <p>Set up your details to start mapping a clear month.</p>
+  </div>
+
+  <% if @user.errors.any? %>
+    <div class="form-errors">
+      <ul>
+        <% @user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @user, url: registration_path, class: "form", local: true do |form| %>
+    <div class="form__group">
+      <%= form.label :email %>
+      <%= form.email_field :email, required: true, autofocus: true, placeholder: "E.g. johndoe@email.com" %>
+    </div>
+
+    <div class="form__group">
+      <%= form.label :password %>
+      <%= form.password_field :password, required: true, placeholder: "Create a password" %>
+      <small class="form__hint">Use at least 8 characters.</small>
+    </div>
+
+    <div class="form__group">
+      <%= form.label :password_confirmation, "Confirm password" %>
+      <%= form.password_field :password_confirmation, required: true, placeholder: "Re-enter your password" %>
+    </div>
+
+    <%= form.submit "Create account", class: "button button--primary" %>
+  <% end %>
+
+  <div class="auth-form__footer">
+    <span>Already planning here?</span>
+    <%= link_to "Sign in", new_session_path %>
+  </div>
+</div>
