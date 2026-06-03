@@ -1,0 +1,85 @@
+<% selected_date = event.event_date.presence || event.starts_at&.to_date&.iso8601 || Time.zone.today.iso8601 %>
+<% selected_start_time = event.start_time.presence || event.starts_at&.strftime("%H:%M") || "09:00" %>
+<% selected_end_time = event.end_time.presence || event.ends_at&.strftime("%H:%M") || "10:00" %>
+<% repeat_checked = event.repeat_event.to_s == "1" %>
+
+<%= form_with model: event, url: events_path, class: "event-form", data: { turbo: true, controller: "event-form", action: "submit->event-modal#close" } do |form| %>
+  <% if event.errors.any? %>
+    <div class="form-errors">
+      <ul>
+        <% event.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="event-form__grid">
+    <div class="form__group event-form__full">
+      <%= form.label :title %>
+      <%= form.text_field :title, required: true, placeholder: "Weekly planning" %>
+    </div>
+
+    <div class="form__group event-form__full">
+      <%= form.label :description %>
+      <%= form.text_area :description, rows: 3, placeholder: "Optional details" %>
+    </div>
+
+    <div class="form__group event-form__full">
+      <%= form.label :event_date, "Date" %>
+      <%= form.date_field :event_date, value: selected_date, required: true %>
+    </div>
+
+    <div class="form__group">
+      <%= form.label :start_time, "Start time" %>
+      <%= form.time_field :start_time, value: selected_start_time, required: true, data: { action: "change->event-form#handleStartTimeChange", event_form_target: "startTime" } %>
+    </div>
+
+    <div class="form__group">
+      <%= form.label :end_time, "End time" %>
+      <%= form.time_field :end_time, value: selected_end_time, required: true, data: { action: "change->event-form#rememberEndTime", event_form_target: "endTime" } %>
+    </div>
+
+    <div class="event-form__full event-form__checkbox-row">
+      <label>
+        <%= form.check_box :all_day, data: { action: "change->event-form#toggleAllDay", event_form_target: "allDay" } %>
+        All day
+      </label>
+    </div>
+
+    <div class="event-form__full event-form__checkbox-row">
+      <label>
+        <%= form.check_box :repeat_event, checked: repeat_checked, data: { action: "change->event-form#toggleRepeat", event_form_target: "repeatToggle" } %>
+        Repeat event
+      </label>
+    </div>
+
+  </div>
+
+  <div class="event-form__repeat" data-event-form-target="repeatFields">
+    <div class="form__group">
+      <%= form.label :repeat_frequency, "Repeat" %>
+      <%= form.select :repeat_frequency, options_for_select([["Daily", "daily"], ["Weekly", "weekly"], ["Monthly", "monthly"]], event.repeat_frequency || "weekly"), {}, data: { event_form_target: "repeatInput" } %>
+    </div>
+    <p class="event-form__repeat-hint">Weekly repeats on the same weekday. Monthly repeats on the same day of month.</p>
+  </div>
+
+  <fieldset class="event-form__colors">
+    <legend>Color</legend>
+    <div class="event-form__palette">
+      <% selected_color = event.color.presence || "white" %>
+      <% Event::COLORS.each do |color| %>
+        <label class="event-form__swatch event-form__swatch--<%= color %>">
+          <%= form.radio_button :color, color, checked: selected_color == color %>
+          <span aria-hidden="true"></span>
+          <span class="sr-only"><%= color.titleize %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+
+  <div class="event-form__actions">
+    <button type="button" class="button button--ghost" data-action="click->event-modal#close">Cancel</button>
+    <%= form.submit "Create event", class: "button button--primary" %>
+  </div>
+<% end %>

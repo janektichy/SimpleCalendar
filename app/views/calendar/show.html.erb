@@ -1,26 +1,22 @@
 <% content_for :page_title, "Simple Calendar" %>
 
-<% today = Time.zone.today %>
-<% current_month_start = today.beginning_of_month %>
-<% calendar_start = current_month_start.beginning_of_week(:monday) %>
-<% calendar_end = current_month_start.end_of_month.end_of_week(:monday) %>
-<% days = (calendar_start..calendar_end).to_a.in_groups_of(7) %>
+<% days = @calendar_days.in_groups_of(7) %>
 
-<div class="calendar-shell">
+<div class="calendar-shell" data-controller="event-modal" data-event-modal-open-value="<%= @open_event_modal.present? %>">
   <div class="calendar-shell__header">
     <div class="calendar-shell__left">
       <div class="calendar-shell__nav">
         <button type="button" class="calendar-shell__nav-button" disabled aria-label="Previous month">‹</button>
         <button type="button" class="calendar-shell__nav-button" disabled aria-label="Next month">›</button>
       </div>
-      <span class="calendar-shell__month"><%= current_month_start.strftime("%B %Y") %></span>
+      <span class="calendar-shell__month"><%= @current_month_start.strftime("%B %Y") %></span>
     </div>
     <div class="calendar-shell__options">
       <div class="calendar-toggle" role="group" aria-label="Calendar view toggle">
         <button type="button" class="is-active">Month</button>
         <button type="button">Week</button>
       </div>
-      <%= link_to "Add event", "#", class: "button button--primary" %>
+      <button type="button" class="button button--primary" data-action="click->event-modal#open">+ Add Event</button>
     </div>
   </div>
 
@@ -35,12 +31,37 @@
       <div class="calendar-grid__row" role="row">
         <% week.each do |date| %>
           <% classes = ["calendar-cell"] %>
-          <% classes << "calendar-cell--muted" if date.month != current_month_start.month %>
+          <% classes << "calendar-cell--muted" if date.month != @current_month_start.month %>
           <div class="<%= classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>">
-            <span><%= date.day %></span>
+            <span class="calendar-cell__day"><%= date.day %></span>
+            <div class="calendar-cell__events">
+              <% Array(@events_by_date[date]).first(3).each do |event| %>
+                <div class="event-chip event-chip--<%= event.color %>">
+                  <span><%= event.title %></span>
+                  <% if event.event_series.present? %>
+                    <div class="event-chip__actions">
+                      <%= button_to "One", event_path(event), method: :delete, params: { delete_scope: "single" }, class: "event-chip__delete", form: { data: { turbo_confirm: "Delete only this event occurrence?" } } %>
+                      <%= button_to "Series", event_path(event), method: :delete, params: { delete_scope: "series" }, class: "event-chip__delete", form: { data: { turbo_confirm: "Delete this entire event series?" } } %>
+                    </div>
+                  <% else %>
+                    <%= button_to "Delete", event_path(event), method: :delete, class: "event-chip__delete", form: { data: { turbo_confirm: "Delete this event?" } } %>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
           </div>
         <% end %>
       </div>
     <% end %>
+  </div>
+
+  <div class="event-modal" data-event-modal-target="overlay" data-action="click->event-modal#closeFromBackdrop" hidden>
+    <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+      <div class="event-modal__header">
+        <h2 id="event-modal-title">Create event</h2>
+        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->event-modal#close">×</button>
+      </div>
+      <%= render "events/form", event: @event %>
+    </div>
   </div>
 </div>

@@ -2,6 +2,9 @@ class User < ApplicationRecord
   # Handles password hashing and authentication helpers
   has_secure_password
 
+  has_many :events, dependent: :destroy
+  has_many :event_series, dependent: :destroy
+
   # Basic email validation keeps credentials clean and unique
   validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
 
