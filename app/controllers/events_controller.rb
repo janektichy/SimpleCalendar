@@ -192,7 +192,7 @@ class EventsController < ApplicationController
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: [
-          turbo_stream.update("callback_messages", partial: "shared/callback_messages", locals: { errors: [event] }),
+          turbo_stream.update("callback_messages", partial: "shared/callback_messages", locals: { errors: [ event ] }),
           turbo_stream.replace("calendar_page", partial: "calendar/page")
         ], status: :unprocessable_entity
       end
