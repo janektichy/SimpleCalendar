@@ -3,7 +3,12 @@
 <% selected_end_time = event.end_time.presence || event.ends_at&.strftime("%H:%M") || "10:00" %>
 <% repeat_checked = event.repeat_event.to_s == "1" %>
 
-<%= form_with model: event, url: events_path, class: "event-form", data: { turbo: true, controller: "event-form", action: "submit->event-modal#close" } do |form| %>
+<% form_url = local_assigns.fetch(:form_url, event.persisted? ? event_path(event) : events_path) %>
+<% form_method = local_assigns.fetch(:form_method, event.persisted? ? :patch : :post) %>
+<% submit_label = local_assigns.fetch(:submit_label, event.persisted? ? "Save changes" : "Create event") %>
+<% cancel_action = local_assigns.fetch(:cancel_action, event.persisted? ? "click->event-modal#close" : "click->create-event-modal#close") %>
+
+<%= form_with model: event, url: form_url, method: form_method, class: "event-form", data: { turbo: true, controller: "event-form" } do |form| %>
   <% if event.errors.any? %>
     <div class="form-errors">
       <ul>
@@ -15,27 +20,27 @@
   <% end %>
 
   <div class="event-form__grid">
-    <div class="form__group event-form__full">
+    <div class="form__group event-form__group event-form__full">
       <%= form.label :title %>
       <%= form.text_field :title, required: true, placeholder: "Weekly planning" %>
     </div>
 
-    <div class="form__group event-form__full">
+    <div class="form__group event-form__group event-form__full">
       <%= form.label :description %>
       <%= form.text_area :description, rows: 3, placeholder: "Optional details" %>
     </div>
 
-    <div class="form__group event-form__full">
+    <div class="form__group event-form__group event-form__full">
       <%= form.label :event_date, "Date" %>
       <%= form.date_field :event_date, value: selected_date, required: true %>
     </div>
 
-    <div class="form__group">
+    <div class="form__group event-form__group">
       <%= form.label :start_time, "Start time" %>
       <%= form.time_field :start_time, value: selected_start_time, required: true, data: { action: "change->event-form#handleStartTimeChange", event_form_target: "startTime" } %>
     </div>
 
-    <div class="form__group">
+    <div class="form__group event-form__group">
       <%= form.label :end_time, "End time" %>
       <%= form.time_field :end_time, value: selected_end_time, required: true, data: { action: "change->event-form#rememberEndTime", event_form_target: "endTime" } %>
     </div>
@@ -79,7 +84,7 @@
   </fieldset>
 
   <div class="event-form__actions">
-    <button type="button" class="button button--ghost" data-action="click->event-modal#close">Cancel</button>
-    <%= form.submit "Create event", class: "button button--primary" %>
+    <button type="button" class="button button--ghost" data-action="<%= cancel_action %>">Cancel</button>
+    <%= form.submit submit_label, class: "button button--primary" %>
   </div>
 <% end %>

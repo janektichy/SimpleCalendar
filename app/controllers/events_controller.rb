@@ -2,7 +2,7 @@ class EventsController < ApplicationController
   REPEAT_OCCURRENCES_COUNT = 24
 
   before_action :require_authentication
-  before_action :set_event, only: :destroy
+  before_action :set_event, only: %i[update destroy]
 
   def create
     event = current_user.events.new(base_event_params)
@@ -25,6 +25,17 @@ class EventsController < ApplicationController
     else
       @event.destroy!
       redirect_to calendar_path, notice: "Event deleted."
+    end
+  end
+
+  def update
+    assign_form_state(@event)
+    assign_schedule(@event)
+
+    if @event.errors.none? && @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at))
+      redirect_to calendar_path, notice: "Event updated."
+    else
+      render_calendar_with_errors(@event)
     end
   end
 
@@ -173,11 +184,25 @@ class EventsController < ApplicationController
   end
 
   def render_calendar_with_errors(event)
-    @event = event
-    @open_event_modal = true
+    @event_with_errors = event
+    @open_event_modal = event.new_record?
+    @new_event = event.new_record? ? event : current_user.events.new(default_event_values)
     build_calendar_data
 
     render "calendar/show", status: :unprocessable_entity
+  end
+
+  def default_event_values
+    now = Time.zone.now.change(min: 0)
+    {
+      starts_at: now,
+      ends_at: now + 1.hour,
+      color: "white",
+      event_date: now.to_date.iso8601,
+      start_time: now.strftime("%H:%M"),
+      end_time: (now + 1.hour).strftime("%H:%M"),
+      repeat_frequency: "weekly"
+    }
   end
 
   def build_calendar_data

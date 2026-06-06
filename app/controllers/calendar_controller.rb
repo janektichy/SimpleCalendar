@@ -3,7 +3,7 @@ class CalendarController < ApplicationController
 
   def show
     build_calendar_data
-    @event ||= current_user.events.new(default_event_values)
+    @new_event ||= current_user.events.new(default_event_values)
   end
 
   def upcoming; end

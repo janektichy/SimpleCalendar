@@ -10,7 +10,7 @@ Rails.application.routes.draw do
   get "upcoming" => "calendar#upcoming", as: :upcoming
   get "settings" => "calendar#settings", as: :settings
 
-  resources :events, only: %i[create destroy]
+  resources :events, only: %i[create update destroy]
 
   root "sessions#new"
 end

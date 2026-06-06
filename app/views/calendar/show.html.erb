@@ -2,7 +2,7 @@
 
 <% days = @calendar_days.in_groups_of(7) %>
 
-<div class="calendar-shell" data-controller="event-modal" data-event-modal-open-value="<%= @open_event_modal.present? %>">
+<div class="calendar-shell" data-controller="create-event-modal" data-create-event-modal-open-value="<%= @open_event_modal.present? %>">
   <div class="calendar-shell__header">
     <div class="calendar-shell__left">
       <div class="calendar-shell__nav">
@@ -16,7 +16,7 @@
         <button type="button" class="is-active">Month</button>
         <button type="button">Week</button>
       </div>
-      <button type="button" class="button button--primary" data-action="click->event-modal#open">+ Add Event</button>
+      <button type="button" class="button button--primary" data-action="click->create-event-modal#open">+ Add Event</button>
     </div>
   </div>
 
@@ -27,7 +27,7 @@
   </div>
 
   <div class="calendar-grid" role="grid" aria-label="Monthly calendar">
-    <% days.each do |week| %>
+    <% days.each_with_index do |week, week_index| %>
       <div class="calendar-grid__row" role="row">
         <% week.each do |date| %>
           <% classes = ["calendar-cell"] %>
@@ -36,16 +36,98 @@
             <span class="calendar-cell__day"><%= date.day %></span>
             <div class="calendar-cell__events">
               <% Array(@events_by_date[date]).first(3).each do |event| %>
-                <div class="event-chip event-chip--<%= event.color %>">
-                  <span><%= event.title %></span>
-                  <% if event.event_series.present? %>
-                    <div class="event-chip__actions">
-                      <%= button_to "One", event_path(event), method: :delete, params: { delete_scope: "single" }, class: "event-chip__delete", form: { data: { turbo_confirm: "Delete only this event occurrence?" } } %>
-                      <%= button_to "Series", event_path(event), method: :delete, params: { delete_scope: "series" }, class: "event-chip__delete", form: { data: { turbo_confirm: "Delete this entire event series?" } } %>
+                <div data-controller="event-modal delete-modal" data-event-modal-open-value="<%= @event_with_errors&.id == event.id %>">
+                  <% popover_classes = ["event-popover"] %>
+                  <% popover_classes << "event-popover--up" if week_index >= (days.length - 2) %>
+                  <details class="<%= popover_classes.join(' ') %>" data-controller="event-popover" data-action="toggle->event-popover#handleToggle click@window->event-popover#closeFromOutside keydown.esc@window->event-popover#close">
+                    <summary class="event-chip event-chip--<%= event.color %>">
+                      <span class="event-chip__title"><%= event.title %></span>
+                      <span class="event-chip__time"><%= event.all_day? ? "All day" : event.starts_at.strftime("%H:%M") %></span>
+                    </summary>
+                    <div class="event-popover__panel event-popover__panel--<%= event.color %>">
+                      <p class="event-popover__title"><%= event.title %></p>
+                      <div class="event-popover__rows">
+                      <% if event.description.present? %>
+                        <div class="event-popover__row">
+                          <span class="event-popover__label">Description</span>
+                          <p class="event-popover__value event-popover__description"><%= event.description %></p>
+                        </div>
+                      <% end %>
+
+                        <div class="event-popover__row">
+                          <span class="event-popover__label">Date</span>
+                          <p class="event-popover__value"><%= event.starts_at.strftime("%A, %B %-d, %Y") %></p>
+                        </div>
+
+                        <div class="event-popover__row">
+                          <span class="event-popover__label">Time</span>
+                          <p class="event-popover__value">
+                            <% if event.all_day? %>
+                              Full day event
+                            <% else %>
+                              <%= event.starts_at.strftime("%H:%M") %> - <%= event.ends_at.strftime("%H:%M") %>
+                            <% end %>
+                          </p>
+                        </div>
+
+                        <% if event.event_series.present? %>
+                          <% repeat_spec = case event.event_series.repeat_frequency
+                            when "weekly"
+                              "every #{event.starts_at.strftime('%A')}"
+                            when "monthly"
+                              "every #{event.starts_at.day.ordinalize}"
+                            when "daily"
+                              "every day"
+                            else
+                              "every #{event.event_series.repeat_frequency}"
+                          end %>
+                          <div class="event-popover__row">
+                            <span class="event-popover__label">Repeats</span>
+                            <p class="event-popover__value">Repeats every <%= event.event_series.repeat_frequency %> (<%= repeat_spec %>)</p>
+                          </div>
+                        <% end %>
+                      </div>
+
+                      <div class="event-popover__actions">
+                        <button type="button" class="button button--ghost event-popover__action" data-action="click->event-modal#open">Edit</button>
+                        <button type="button" class="button event-delete__summary" data-action="click->delete-modal#open">Delete</button>
+                      </div>
                     </div>
-                  <% else %>
-                    <%= button_to "Delete", event_path(event), method: :delete, class: "event-chip__delete", form: { data: { turbo_confirm: "Delete this event?" } } %>
-                  <% end %>
+                  </details>
+
+                  <div class="event-modal event-modal--confirm" data-delete-modal-target="overlay" data-action="click->delete-modal#closeFromBackdrop" hidden>
+                    <div class="event-modal__panel event-modal__panel--confirm" role="dialog" aria-modal="true" aria-labelledby="delete-event-modal-title-<%= event.id %>">
+                      <div class="event-modal__header event-modal__header--confirm">
+                        <h2 id="delete-event-modal-title-<%= event.id %>">Confirm deletion</h2>
+                        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->delete-modal#close">×</button>
+                      </div>
+                      <p class="event-delete__message">
+                        Are you sure you want to delete event <strong><%= event.title %></strong>?
+                          <% if event.event_series.present? %>
+                            <br>
+                          This is a repeated event. Deleting it will also delete all repetitions of this event.
+                          <% end %>
+                        </p>
+                      <div class="event-delete__dialog-actions">
+                        <button type="button" class="button event-delete__cancel" data-action="click->delete-modal#close">Cancel</button>
+                        <%= form_with url: event_path(event), method: :delete do |form| %>
+                          <%= hidden_field_tag :delete_scope, event.event_series.present? ? "series" : "single" %>
+                          <%= form.submit "Delete event", class: "button event-delete__confirm" %>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="event-modal" data-event-modal-target="overlay" data-action="click->event-modal#closeFromBackdrop" hidden>
+                    <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="edit-event-modal-title-<%= event.id %>">
+                      <div class="event-modal__header">
+                        <h2 id="edit-event-modal-title-<%= event.id %>">Edit event</h2>
+                        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->event-modal#close">×</button>
+                      </div>
+                      <% form_event = (@event_with_errors&.id == event.id ? @event_with_errors : event) %>
+                      <%= render "events/form", event: form_event, form_url: event_path(event), form_method: :patch, submit_label: "Save changes" %>
+                    </div>
+                  </div>
                 </div>
               <% end %>
             </div>
@@ -55,13 +137,13 @@
     <% end %>
   </div>
 
-  <div class="event-modal" data-event-modal-target="overlay" data-action="click->event-modal#closeFromBackdrop" hidden>
+  <div class="event-modal" data-create-event-modal-target="overlay" data-action="click->create-event-modal#closeFromBackdrop" hidden>
     <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
       <div class="event-modal__header">
         <h2 id="event-modal-title">Create event</h2>
-        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->event-modal#close">×</button>
+        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->create-event-modal#close">×</button>
       </div>
-      <%= render "events/form", event: @event %>
+      <%= render "events/form", event: @new_event %>
     </div>
   </div>
 </div>
