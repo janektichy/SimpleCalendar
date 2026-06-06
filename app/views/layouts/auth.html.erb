@@ -14,6 +14,9 @@
     <%= javascript_importmap_tags %>
   </head>
   <body class="body--public">
+    <%= turbo_frame_tag "callback_messages" do %>
+      <%= render "shared/callback_messages", errors: [@user] %>
+    <% end %>
     <div class="auth-shell">
       <div class="auth-panel">
         <div class="auth-panel__brand">
@@ -22,11 +25,6 @@
         </div>
         <%= yield %>
       </div>
-      <% if flash.any? { |_, message| message.present? } %>
-        <div class="auth-shell__flash">
-          <%= render "shared/flash" %>
-        </div>
-      <% end %>
     </div>
   </body>
 </html>

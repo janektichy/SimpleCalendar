@@ -7,16 +7,6 @@
     <p>Set up your details to start mapping a clear month.</p>
   </div>
 
-  <% if @user.errors.any? %>
-    <div class="form-errors">
-      <ul>
-        <% @user.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
   <%= form_with model: @user, url: registration_path, class: "form", local: true do |form| %>
     <div class="form__group">
       <%= form.label :email %>

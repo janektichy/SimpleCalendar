@@ -12,7 +12,7 @@ class EventsController < ApplicationController
     if repeat_event?
       create_repeated_events(event)
     elsif event.save
-      redirect_to calendar_path, notice: "Event created."
+      redirect_with_callback("Event created.")
     else
       render_calendar_with_errors(event)
     end
@@ -21,10 +21,10 @@ class EventsController < ApplicationController
   def destroy
     if delete_series?
       @event.event_series.destroy!
-      redirect_to calendar_path, notice: "Event series deleted."
+      redirect_with_callback("Event series deleted.")
     else
       @event.destroy!
-      redirect_to calendar_path, notice: "Event deleted."
+      redirect_with_callback("Event deleted.")
     end
   end
 
@@ -33,7 +33,7 @@ class EventsController < ApplicationController
     assign_schedule(@event)
 
     if @event.errors.none? && @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at))
-      redirect_to calendar_path, notice: "Event updated."
+      redirect_with_callback("Event updated.")
     else
       render_calendar_with_errors(@event)
     end
@@ -121,7 +121,7 @@ class EventsController < ApplicationController
       build_repeated_events(base_event, series).each(&:save!)
     end
 
-    redirect_to calendar_path, notice: "Repeating event series created."
+    redirect_with_callback("Repeating event series created.")
   rescue ActiveRecord::RecordInvalid
     merge_errors(base_event, series)
     render_calendar_with_errors(base_event)
@@ -189,7 +189,31 @@ class EventsController < ApplicationController
     @new_event = event.new_record? ? event : current_user.events.new(default_event_values)
     build_calendar_data
 
-    render "calendar/show", status: :unprocessable_entity
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.update("callback_messages", partial: "shared/callback_messages", locals: { errors: [event] }),
+          turbo_stream.replace("calendar_page", partial: "calendar/page")
+        ], status: :unprocessable_entity
+      end
+      format.html { render "calendar/show", status: :unprocessable_entity }
+    end
+  end
+
+  def redirect_with_callback(message)
+    respond_to do |format|
+      format.turbo_stream do
+        flash.now[:notice] = message
+        build_calendar_data
+        @new_event = current_user.events.new(default_event_values)
+
+        render turbo_stream: [
+          turbo_stream.update("callback_messages", partial: "shared/callback_messages"),
+          turbo_stream.replace("calendar_page", partial: "calendar/page")
+        ]
+      end
+      format.html { redirect_to calendar_path, notice: message }
+    end
   end
 
   def default_event_values

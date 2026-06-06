@@ -9,16 +9,6 @@
 <% cancel_action = local_assigns.fetch(:cancel_action, event.persisted? ? "click->event-modal#close" : "click->create-event-modal#close") %>
 
 <%= form_with model: event, url: form_url, method: form_method, class: "event-form", data: { turbo: true, controller: "event-form" } do |form| %>
-  <% if event.errors.any? %>
-    <div class="form-errors">
-      <ul>
-        <% event.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
-
   <div class="event-form__grid">
     <div class="form__group event-form__group event-form__full">
       <%= form.label :title %>

@@ -1,0 +1,30 @@
+<% messages = [] %>
+
+<% flash.each do |type, message| %>
+  <% next if message.blank? %>
+  <% normalized_type = case type.to_s
+     when "notice", "success" then "success"
+     when "alert", "error" then "error"
+     when "warning" then "warning"
+     else "info"
+     end %>
+  <% messages << { type: normalized_type, text: message } %>
+<% end %>
+
+<% Array(local_assigns[:errors]).compact.each do |record| %>
+  <% next unless record.respond_to?(:errors) && record.errors.any? %>
+  <% record.errors.full_messages.each do |message| %>
+    <% messages << { type: "error", text: message } %>
+  <% end %>
+<% end %>
+
+<% if messages.any? %>
+  <div class="callback-messages" aria-live="polite" aria-atomic="true">
+    <% messages.each do |message| %>
+      <div class="callback-message callback-message--<%= message[:type] %>" data-controller="callback-message" data-callback-message-timeout-value="5000">
+        <span class="callback-message__text"><%= message[:text] %></span>
+        <button type="button" class="callback-message__close" aria-label="Close message" data-action="callback-message#close">&times;</button>
+      </div>
+    <% end %>
+  </div>
+<% end %>
