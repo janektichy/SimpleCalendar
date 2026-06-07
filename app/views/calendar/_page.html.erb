@@ -30,105 +30,39 @@
         <% week.each do |date| %>
           <% classes = ["calendar-cell"] %>
           <% classes << "calendar-cell--muted" if date.month != @current_month_start.month %>
-          <div class="<%= classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>">
+          <% events = Array(@events_by_date[date]) %>
+          <% visible_events = events.first(2) %>
+          <% hidden_events = events.drop(2) %>
+          <div class="<%= classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>" <%= tag.attributes(data: hidden_events.any? ? { controller: "day-popover", action: "click@window->day-popover#closeFromOutside keydown.esc@window->day-popover#close" } : {}) %>>
             <span class="calendar-cell__day"><%= date.day %></span>
             <div class="calendar-cell__events">
-              <% Array(@events_by_date[date]).first(3).each do |event| %>
-                <div data-controller="event-modal delete-modal" data-event-modal-open-value="<%= @event_with_errors&.id == event.id %>">
-                  <% popover_classes = ["event-popover"] %>
-                  <% popover_classes << "event-popover--up" if week_index >= (days.length - 2) %>
-                  <details class="<%= popover_classes.join(' ') %>" data-controller="event-popover" data-action="toggle->event-popover#handleToggle click@window->event-popover#closeFromOutside keydown.esc@window->event-popover#close">
-                    <summary class="event-chip event-chip--<%= event.color %>">
-                      <span class="event-chip__title"><%= event.title %></span>
-                      <span class="event-chip__time"><%= event.all_day? ? "All day" : event.starts_at.strftime("%H:%M") %></span>
-                    </summary>
-                    <div class="event-popover__panel event-popover__panel--<%= event.color %>">
-                      <p class="event-popover__title"><%= event.title %></p>
-                      <div class="event-popover__rows">
-                      <% if event.description.present? %>
-                        <div class="event-popover__row">
-                          <span class="event-popover__label">Description</span>
-                          <p class="event-popover__value event-popover__description"><%= event.description %></p>
-                        </div>
-                      <% end %>
+              <% visible_events.each do |event| %>
+                <%= render "calendar/event_chip", event: event, days: days, week_index: week_index %>
+              <% end %>
 
-                        <div class="event-popover__row">
-                          <span class="event-popover__label">Date</span>
-                          <p class="event-popover__value"><%= event.starts_at.strftime("%A, %B %-d, %Y") %></p>
-                        </div>
-
-                        <div class="event-popover__row">
-                          <span class="event-popover__label">Time</span>
-                          <p class="event-popover__value">
-                            <% if event.all_day? %>
-                              Full day event
-                            <% else %>
-                              <%= event.starts_at.strftime("%H:%M") %> - <%= event.ends_at.strftime("%H:%M") %>
-                            <% end %>
-                          </p>
-                        </div>
-
-                        <% if event.event_series.present? %>
-                          <% repeat_spec = case event.event_series.repeat_frequency
-                            when "weekly"
-                              "every #{event.starts_at.strftime('%A')}"
-                            when "monthly"
-                              "every #{event.starts_at.day.ordinalize}"
-                            when "daily"
-                              "every day"
-                            else
-                              "every #{event.event_series.repeat_frequency}"
-                          end %>
-                          <div class="event-popover__row">
-                            <span class="event-popover__label">Repeats</span>
-                            <p class="event-popover__value">Repeats every <%= event.event_series.repeat_frequency %> (<%= repeat_spec %>)</p>
-                          </div>
-                        <% end %>
-                      </div>
-
-                      <div class="event-popover__actions">
-                        <button type="button" class="button button--ghost event-popover__action" data-action="click->event-modal#open">Edit</button>
-                        <button type="button" class="button event-delete__summary" data-action="click->delete-modal#open">Delete</button>
-                      </div>
-                    </div>
-                  </details>
-
-                  <div class="event-modal event-modal--confirm" data-delete-modal-target="overlay" data-action="click->delete-modal#closeFromBackdrop" hidden>
-                    <div class="event-modal__panel event-modal__panel--confirm" role="dialog" aria-modal="true" aria-labelledby="delete-event-modal-title-<%= event.id %>">
-                      <div class="event-modal__header event-modal__header--confirm">
-                        <h2 id="delete-event-modal-title-<%= event.id %>">Confirm deletion</h2>
-                        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->delete-modal#close">×</button>
-                      </div>
-                      <p class="event-delete__message">
-                        Are you sure you want to delete event <strong><%= event.title %></strong>?
-                          <% if event.event_series.present? %>
-                            <br>
-                          This is a repeated event. Deleting it will also delete all repetitions of this event.
-                          <% end %>
-                        </p>
-                      <div class="event-delete__dialog-actions">
-                        <button type="button" class="button event-delete__cancel" data-action="click->delete-modal#close">Cancel</button>
-                        <%= form_with url: event_path(event), method: :delete do |form| %>
-                          <%= hidden_field_tag :delete_scope, event.event_series.present? ? "series" : "single" %>
-                          <%= form.submit "Delete event", class: "button event-delete__confirm" %>
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="event-modal" data-event-modal-target="overlay" data-action="click->event-modal#closeFromBackdrop" hidden>
-                    <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="edit-event-modal-title-<%= event.id %>">
-                      <div class="event-modal__header">
-                        <h2 id="edit-event-modal-title-<%= event.id %>">Edit event</h2>
-                        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->event-modal#close">×</button>
-                      </div>
-                      <% form_event = (@event_with_errors&.id == event.id ? @event_with_errors : event) %>
-                      <%= render "events/form", event: form_event, form_url: event_path(event), form_method: :patch, submit_label: "Save changes" %>
-                    </div>
-                  </div>
-                </div>
+              <% if hidden_events.any? %>
+                <button type="button" class="calendar-cell__more-button" data-day-popover-target="trigger" data-action="click->day-popover#open" aria-expanded="false">
+                  +<%= hidden_events.size %> more
+                </button>
               <% end %>
             </div>
+
+            <% if hidden_events.any? %>
+              <div class="day-popover" data-day-popover-target="panel" hidden>
+                <div class="day-popover__header">
+                  <div>
+                    <span class="day-popover__eyebrow"><%= date.strftime("%A") %></span>
+                    <h3 class="day-popover__title"><%= date.strftime("%B %-d") %></h3>
+                  </div>
+                  <button type="button" class="day-popover__close" data-action="click->day-popover#close" aria-label="Close day events">×</button>
+                </div>
+                <div class="day-popover__events">
+                  <% events.each do |event| %>
+                    <%= render "calendar/event_chip", event: event, days: days, week_index: week_index %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
         <% end %>
       </div>

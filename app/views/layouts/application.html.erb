@@ -45,12 +45,6 @@
         </aside>
 
         <main class="main">
-          <header class="main__header">
-            <div>
-              <h1 class="main__title"><%= content_for?(:page_title) ? yield(:page_title) : "Simple Calendar" %></h1>
-              <p class="main__subtitle">A focused calendar to keep the essentials in view.</p>
-            </div>
-          </header>
           <section class="main__content">
             <%= yield %>
           </section>
