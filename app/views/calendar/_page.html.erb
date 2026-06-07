@@ -1,4 +1,5 @@
 <% days = @calendar_days.in_groups_of(7) %>
+<% calendar_view = @calendar_view || "month" %>
 
 <div id="calendar_page" class="calendar-shell" data-controller="create-event-modal" data-create-event-modal-open-value="<%= @open_event_modal.present? %>">
   <div class="calendar-shell__header">
@@ -11,63 +12,133 @@
     </div>
     <div class="calendar-shell__options">
       <div class="calendar-toggle" role="group" aria-label="Calendar view toggle">
-        <button type="button" class="is-active">Month</button>
-        <button type="button">Week</button>
+        <%= link_to "Month", calendar_path(view: "month"), class: ("is-active" if calendar_view == "month") %>
+        <%= link_to "Week", calendar_path(view: "week"), class: ("is-active" if calendar_view == "week") %>
       </div>
       <button type="button" class="button button--primary" data-action="click->create-event-modal#open">+ Add Event</button>
     </div>
   </div>
 
-  <div class="calendar-weekdays">
-    <% %w[Mon Tue Wed Thu Fri Sat Sun].each do |day_name| %>
-      <span><%= day_name %></span>
-    <% end %>
-  </div>
-
-  <div class="calendar-grid" role="grid" aria-label="Monthly calendar">
-    <% days.each_with_index do |week, week_index| %>
-      <div class="calendar-grid__row" role="row">
-        <% week.each do |date| %>
-          <% classes = ["calendar-cell"] %>
-          <% classes << "calendar-cell--muted" if date.month != @current_month_start.month %>
-          <% events = Array(@events_by_date[date]) %>
-          <% visible_events = events.first(2) %>
-          <% hidden_events = events.drop(2) %>
-          <div class="<%= classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>" <%= tag.attributes(data: hidden_events.any? ? { controller: "day-popover", action: "click@window->day-popover#closeFromOutside keydown.esc@window->day-popover#close" } : {}) %>>
-            <span class="calendar-cell__day"><%= date.day %></span>
-            <div class="calendar-cell__events">
-              <% visible_events.each do |event| %>
-                <%= render "calendar/event_chip", event: event, days: days, week_index: week_index %>
-              <% end %>
-
-              <% if hidden_events.any? %>
-                <button type="button" class="calendar-cell__more-button" data-day-popover-target="trigger" data-action="click->day-popover#open" aria-expanded="false">
-                  +<%= hidden_events.size %> more
-                </button>
-              <% end %>
-            </div>
-
-            <% if hidden_events.any? %>
-              <div class="day-popover" data-day-popover-target="panel" hidden>
-                <div class="day-popover__header">
-                  <div>
-                    <span class="day-popover__eyebrow"><%= date.strftime("%A") %></span>
-                    <h3 class="day-popover__title"><%= date.strftime("%B %-d") %></h3>
-                  </div>
-                  <button type="button" class="day-popover__close" data-action="click->day-popover#close" aria-label="Close day events">×</button>
-                </div>
-                <div class="day-popover__events">
-                  <% events.each do |event| %>
-                    <%= render "calendar/event_chip", event: event, days: days, week_index: week_index %>
-                  <% end %>
-                </div>
+  <% if calendar_view == "week" %>
+    <% hours = (0..23).to_a %>
+    <% hour_height = 64 %>
+    <div class="calendar-week-view" style="--hour-height: <%= hour_height %>px;" role="grid" aria-label="Weekly calendar" data-controller="week-calendar-scroll">
+      <div class="calendar-week-view__viewport" data-week-calendar-scroll-target="viewport">
+        <div class="calendar-week-view__header">
+          <div class="calendar-week-view__corner" aria-hidden="true"></div>
+          <div class="calendar-week-view__days">
+            <% @week_days.each do |date| %>
+              <div class="calendar-week-view__day-heading">
+                <span class="calendar-week-view__day-name"><%= date.strftime("%a") %></span>
+                <span class="calendar-week-view__day-number"><%= date.day %></span>
               </div>
             <% end %>
           </div>
-        <% end %>
+        </div>
+
+        <div class="calendar-week-view__body">
+          <div class="calendar-week-view__times" aria-hidden="true">
+            <% hours.each do |hour| %>
+              <span><%= format("%02d:00", hour) %></span>
+            <% end %>
+          </div>
+
+          <div class="calendar-week-view__grid">
+            <div class="calendar-week-view__hour-lines" aria-hidden="true"></div>
+
+            <% @week_days.each_with_index do |date, day_index| %>
+              <div class="calendar-week-view__day-column" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>">
+                <% timed_events = Array(@events_by_date[date]) %>
+                <% event_layouts = {} %>
+                <% timed_events.each do |event| %>
+                  <% starts_at = event.starts_at.in_time_zone %>
+                  <% ends_at = event.ends_at.in_time_zone %>
+                  <% starts_minutes = starts_at.hour * 60 + starts_at.min %>
+                  <% duration_minutes = event.all_day? ? 60 : [((ends_at - starts_at) / 60).round, 1].max %>
+                  <% event_layouts[event.id] = { start: starts_minutes, end_time: starts_minutes + duration_minutes, index: 0, count: 1 } %>
+                <% end %>
+                <% timed_events.each do |event| %>
+                  <% layout = event_layouts[event.id] %>
+                  <% overlapping_events = timed_events.select do |other_event| %>
+                    <% other_layout = event_layouts[other_event.id] %>
+                    <% layout[:start] < other_layout[:end_time] && other_layout[:start] < layout[:end_time] %>
+                  <% end %>
+                  <% overlapping_events.each_with_index do |overlap_event, overlap_index| %>
+                    <% event_layouts[overlap_event.id][:index] = [event_layouts[overlap_event.id][:index], overlap_index].max %>
+                    <% event_layouts[overlap_event.id][:count] = [event_layouts[overlap_event.id][:count], overlapping_events.size].max %>
+                  <% end %>
+                <% end %>
+
+                <% timed_events.each do |event| %>
+                  <% starts_at = event.starts_at.in_time_zone %>
+                  <% ends_at = event.ends_at.in_time_zone %>
+                  <% starts_minutes = starts_at.hour * 60 + starts_at.min %>
+                  <% duration_minutes = event.all_day? ? 60 : [((ends_at - starts_at) / 60).round, 1].max %>
+                  <% layout = event_layouts[event.id] %>
+                  <% top = starts_minutes / 60.0 * hour_height %>
+                  <% height = event.all_day? ? 30 : duration_minutes / 60.0 * hour_height %>
+                  <div class="calendar-week-view__event" style="top: <%= top %>px; height: <%= height %>px; --overlap-index: <%= layout[:index] %>; --overlap-count: <%= layout[:count] %>;">
+                    <%= render "calendar/event_chip", event: event, days: [@week_days], week_index: day_index %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
       </div>
-    <% end %>
-  </div>
+    </div>
+  <% else %>
+    <div class="calendar-weekdays">
+      <% %w[Mon Tue Wed Thu Fri Sat Sun].each do |day_name| %>
+        <span><%= day_name %></span>
+      <% end %>
+    </div>
+
+    <div class="calendar-grid" role="grid" aria-label="Monthly calendar">
+      <% days.each_with_index do |week, week_index| %>
+        <div class="calendar-grid__row" role="row">
+          <% week.each do |date| %>
+            <% classes = ["calendar-cell"] %>
+            <% classes << "calendar-cell--muted" if date.month != @current_month_start.month %>
+            <% events = Array(@events_by_date[date]) %>
+            <% visible_events = events.first(2) %>
+            <% hidden_events = events.drop(2) %>
+            <div class="<%= classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>" <%= tag.attributes(data: hidden_events.any? ? { controller: "day-popover", action: "click@window->day-popover#closeFromOutside keydown.esc@window->day-popover#close" } : {}) %>>
+              <span class="calendar-cell__day"><%= date.day %></span>
+              <div class="calendar-cell__events">
+                <% visible_events.each do |event| %>
+                  <%= render "calendar/event_chip", event: event, days: days, week_index: week_index %>
+                <% end %>
+
+                <% if hidden_events.any? %>
+                  <button type="button" class="calendar-cell__more-button" data-day-popover-target="trigger" data-action="click->day-popover#open" aria-expanded="false">
+                    +<%= hidden_events.size %> more
+                  </button>
+                <% end %>
+              </div>
+
+              <% if hidden_events.any? %>
+                <div class="day-popover" data-day-popover-target="panel" hidden>
+                  <div class="day-popover__header">
+                    <div>
+                      <span class="day-popover__eyebrow"><%= date.strftime("%A") %></span>
+                      <h3 class="day-popover__title"><%= date.strftime("%B %-d") %></h3>
+                    </div>
+                    <button type="button" class="day-popover__close" data-action="click->day-popover#close" aria-label="Close day events">×</button>
+                  </div>
+                  <div class="day-popover__events">
+                    <% events.each do |event| %>
+                      <%= render "calendar/event_chip", event: event, days: days, week_index: week_index %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
 
   <div class="event-modal" data-create-event-modal-target="overlay" data-action="click->create-event-modal#closeFromBackdrop" hidden>
     <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
