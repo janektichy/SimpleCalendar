@@ -9,6 +9,10 @@
 <% cancel_action = local_assigns.fetch(:cancel_action, event.persisted? ? "click->event-modal#close" : "click->create-event-modal#close") %>
 
 <%= form_with model: event, url: form_url, method: form_method, class: "event-form", data: { turbo: true, controller: "event-form" } do |form| %>
+  <%= hidden_field_tag :view, params[:view] if params[:view].present? %>
+  <%= hidden_field_tag :month, params[:month] if params[:month].present? %>
+  <%= hidden_field_tag :week, params[:week] if params[:week].present? %>
+
   <div class="event-form__grid">
     <div class="form__group event-form__group event-form__full">
       <%= form.label :title %>

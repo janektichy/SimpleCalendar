@@ -74,6 +74,9 @@
         <button type="button" class="button event-delete__cancel" data-action="click->delete-modal#close">Cancel</button>
         <%= form_with url: event_path(event), method: :delete do |form| %>
           <%= hidden_field_tag :delete_scope, event.event_series.present? ? "series" : "single" %>
+          <%= hidden_field_tag :view, params[:view] if params[:view].present? %>
+          <%= hidden_field_tag :month, params[:month] if params[:month].present? %>
+          <%= hidden_field_tag :week, params[:week] if params[:week].present? %>
           <%= form.submit "Delete event", class: "button event-delete__confirm" %>
         <% end %>
       </div>

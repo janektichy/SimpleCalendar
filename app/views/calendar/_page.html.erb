@@ -1,19 +1,28 @@
 <% days = @calendar_days.in_groups_of(7) %>
 <% calendar_view = @calendar_view || "month" %>
+<% today = @today || Time.zone.today %>
+<% selected_month = @current_month_start %>
+<% selected_week = @current_week_start %>
+<% previous_path = calendar_view == "week" ? calendar_path(view: "week", week: selected_week.prev_week.iso8601) : calendar_path(view: "month", month: selected_month.prev_month.strftime("%Y-%m")) %>
+<% next_path = calendar_view == "week" ? calendar_path(view: "week", week: selected_week.next_week.iso8601) : calendar_path(view: "month", month: selected_month.next_month.strftime("%Y-%m")) %>
+<% today_path = calendar_view == "week" ? calendar_path(view: "week", week: today.beginning_of_week(:monday).iso8601) : calendar_path(view: "month", month: today.strftime("%Y-%m")) %>
+<% week_switch_start = selected_month == today.beginning_of_month ? today.beginning_of_week(:monday) : selected_month.beginning_of_week(:monday) %>
+<% header_title = calendar_view == "week" ? "#{selected_week.strftime("%b %-d")} - #{selected_week.end_of_week(:monday).strftime("%b %-d, %Y")}" : selected_month.strftime("%B %Y") %>
 
 <div id="calendar_page" class="calendar-shell" data-controller="create-event-modal" data-create-event-modal-open-value="<%= @open_event_modal.present? %>">
   <div class="calendar-shell__header">
     <div class="calendar-shell__left">
       <div class="calendar-shell__nav">
-        <button type="button" class="calendar-shell__nav-button" disabled aria-label="Previous month">‹</button>
-        <button type="button" class="calendar-shell__nav-button" disabled aria-label="Next month">›</button>
+        <%= link_to "‹", previous_path, class: "calendar-shell__nav-button", data: { turbo_action: "replace" }, aria: { label: "Previous #{calendar_view}" } %>
+        <%= link_to "›", next_path, class: "calendar-shell__nav-button", data: { turbo_action: "replace" }, aria: { label: "Next #{calendar_view}" } %>
       </div>
-      <span class="calendar-shell__month"><%= @current_month_start.strftime("%B %Y") %></span>
+      <span class="calendar-shell__month"><%= header_title %></span>
     </div>
     <div class="calendar-shell__options">
+      <%= link_to "Today", today_path, class: "calendar-shell__today-button", data: { turbo_action: "replace" } %>
       <div class="calendar-toggle" role="group" aria-label="Calendar view toggle">
-        <%= link_to "Month", calendar_path(view: "month"), class: ("is-active" if calendar_view == "month") %>
-        <%= link_to "Week", calendar_path(view: "week"), class: ("is-active" if calendar_view == "week") %>
+        <%= link_to "Month", calendar_path(view: "month", month: selected_week.end_of_week(:monday).strftime("%Y-%m")), class: ("is-active" if calendar_view == "month"), data: { turbo_action: "replace" } %>
+        <%= link_to "Week", calendar_path(view: "week", week: week_switch_start.iso8601), class: ("is-active" if calendar_view == "week"), data: { turbo_action: "replace" } %>
       </div>
       <button type="button" class="button button--primary" data-action="click->create-event-modal#open">+ Add Event</button>
     </div>
@@ -28,7 +37,9 @@
           <div class="calendar-week-view__corner" aria-hidden="true"></div>
           <div class="calendar-week-view__days">
             <% @week_days.each do |date| %>
-              <div class="calendar-week-view__day-heading">
+              <% heading_classes = ["calendar-week-view__day-heading"] %>
+              <% heading_classes << "calendar-week-view__day-heading--today" if date == today %>
+              <div class="<%= heading_classes.join(" ") %>">
                 <span class="calendar-week-view__day-name"><%= date.strftime("%a") %></span>
                 <span class="calendar-week-view__day-number"><%= date.day %></span>
               </div>
@@ -47,7 +58,9 @@
             <div class="calendar-week-view__hour-lines" aria-hidden="true"></div>
 
             <% @week_days.each_with_index do |date, day_index| %>
-              <div class="calendar-week-view__day-column" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>">
+              <% column_classes = ["calendar-week-view__day-column"] %>
+              <% column_classes << "calendar-week-view__day-column--today" if date == today %>
+              <div class="<%= column_classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>">
                 <% timed_events = Array(@events_by_date[date]) %>
                 <% event_layouts = {} %>
                 <% timed_events.each do |event| %>
@@ -100,6 +113,7 @@
           <% week.each do |date| %>
             <% classes = ["calendar-cell"] %>
             <% classes << "calendar-cell--muted" if date.month != @current_month_start.month %>
+            <% classes << "calendar-cell--today" if date == today %>
             <% events = Array(@events_by_date[date]) %>
             <% visible_events = events.first(2) %>
             <% hidden_events = events.drop(2) %>
