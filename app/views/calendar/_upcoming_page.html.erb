@@ -13,6 +13,7 @@
     </div>
 
     <div class="upcoming-header__actions">
+      <%= link_to "Today", upcoming_path(date: @today.iso8601, days: days_count), class: "calendar-shell__today-button", data: { turbo_action: "replace" } %>
       <%= form_with url: upcoming_path, method: :get, class: "upcoming-range", data: { turbo_action: "replace" } do |form| %>
         <%= form.hidden_field :date, value: selected_date.iso8601 %>
         <%= form.label :days, "Show" %>
