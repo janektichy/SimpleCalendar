@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_03_162100) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_08_213000) do
   create_table "event_series", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "occurrences_count", null: false
@@ -39,6 +39,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_162100) do
 
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "default_calendar_view", default: "month", null: false
+    t.integer "default_upcoming_days", default: 1, null: false
     t.string "email", null: false
     t.string "password_digest", null: false
     t.datetime "updated_at", null: false

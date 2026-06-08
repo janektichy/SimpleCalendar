@@ -9,6 +9,9 @@ Rails.application.routes.draw do
   get "calendar" => "calendar#show", as: :calendar
   get "upcoming" => "calendar#upcoming", as: :upcoming
   get "settings" => "calendar#settings", as: :settings
+  patch "settings/profile" => "calendar#update_profile", as: :settings_profile
+  patch "settings/password" => "calendar#update_password", as: :settings_password
+  patch "settings/input" => "calendar#update_input_configuration", as: :settings_input_configuration
 
   resources :events, only: %i[create update destroy]
 

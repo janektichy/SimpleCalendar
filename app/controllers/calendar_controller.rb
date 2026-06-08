@@ -11,13 +11,68 @@ class CalendarController < ApplicationController
     @new_event ||= current_user.events.new(default_event_values)
   end
 
-  def settings; end
+  def settings
+    @settings_section = selected_settings_section
+  end
+
+  def update_profile
+    @settings_section = "account"
+
+    if current_user.update(profile_params)
+      redirect_to settings_path(section: @settings_section), notice: "Profile settings updated."
+    else
+      render :settings, status: :unprocessable_entity
+    end
+  end
+
+  def update_password
+    @settings_section = "account"
+
+    unless current_user.authenticate(password_params[:current_password])
+      current_user.errors.add(:current_password, "is incorrect")
+      return render :settings, status: :unprocessable_entity
+    end
+
+    if current_user.update(password_params.except(:current_password))
+      redirect_to settings_path(section: @settings_section), notice: "Password updated."
+    else
+      render :settings, status: :unprocessable_entity
+    end
+  end
+
+  def update_input_configuration
+    @settings_section = "general"
+
+    if current_user.update(input_configuration_params)
+      redirect_to settings_path(section: @settings_section), notice: "Input configuration updated."
+    else
+      render :settings, status: :unprocessable_entity
+    end
+  end
 
   private
 
+  def profile_params
+    params.require(:user).permit(:email)
+  end
+
+  def password_params
+    params.require(:user).permit(:current_password, :password, :password_confirmation)
+  end
+
+  def input_configuration_params
+    params.require(:user).permit(:default_upcoming_days, :default_calendar_view)
+  end
+
+  def selected_settings_section
+    return params[:section] if %w[account general].include?(params[:section])
+
+    "account"
+  end
+
   def build_calendar_data
     today = Time.zone.today
-    @calendar_view = params[:view] == "week" ? "week" : "month"
+    @calendar_view = selected_calendar_view
     current_month_start = selected_month_start(today)
     current_week_start = selected_week_start(today)
     calendar_start = current_month_start.beginning_of_week(:monday)
@@ -52,7 +107,14 @@ class CalendarController < ApplicationController
   end
 
   def selected_upcoming_days_count
-    params[:days].to_i.clamp(1, 14)
+    selected_days = params[:days].presence || current_user.default_upcoming_days
+    selected_days.to_i.clamp(1, 14)
+  end
+
+  def selected_calendar_view
+    return params[:view] if %w[month week].include?(params[:view])
+
+    current_user.default_calendar_view
   end
 
   def selected_month_start(today)

@@ -1,4 +1,123 @@
-<div class="empty-state">
-  <h2>Personalize your workspace</h2>
-  <p>Account preferences are coming soon. For now, enjoy the calm.</p>
+<% settings_section = @settings_section || "account" %>
+
+<div class="settings-page" data-controller="settings-tabs" data-settings-tabs-active-value="<%= settings_section %>">
+  <header class="settings-header">
+    <div>
+      <p class="settings-header__eyebrow">Account settings</p>
+      <h1>Settings</h1>
+      <p>Manage your account details and choose the defaults that shape your calendar workflow.</p>
+    </div>
+  </header>
+
+  <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+    <%= link_to "Account details", settings_path(section: "account"), class: "settings-tabs__button", role: "tab", data: { settings_tabs_target: "tab", settings_tabs_panel_param: "account", action: "click->settings-tabs#switch", turbo_action: "replace" } %>
+    <%= link_to "General", settings_path(section: "general"), class: "settings-tabs__button", role: "tab", data: { settings_tabs_target: "tab", settings_tabs_panel_param: "general", action: "click->settings-tabs#switch", turbo_action: "replace" } %>
+  </div>
+
+  <section class="settings-panel" role="tabpanel" aria-labelledby="account-details-title" data-settings-tabs-target="panel" data-settings-tabs-panel="account" <%= "hidden" unless settings_section == "account" %>>
+    <div class="settings-panel__intro">
+      <h2 id="account-details-title">Account details</h2>
+      <p>Keep your sign-in credentials current.</p>
+    </div>
+
+    <div class="settings-grid">
+      <div class="settings-card">
+        <div class="settings-card__heading">
+          <h3>Profile</h3>
+          <p>Update the email address used for sign in and reminder delivery.</p>
+        </div>
+
+        <%= form_with model: current_user, url: settings_profile_path, method: :patch, class: "settings-form" do |form| %>
+          <%= hidden_field_tag :section, "account" %>
+
+          <div class="settings-field">
+            <%= form.label :email %>
+            <%= form.email_field :email, autocomplete: "email", required: true %>
+            <% current_user.errors.full_messages_for(:email).each do |message| %>
+              <p class="settings-error"><%= message %></p>
+            <% end %>
+          </div>
+
+          <%= form.submit "Save profile", class: "button button--primary" %>
+        <% end %>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card__heading">
+          <h3>Password</h3>
+          <p>Change your password with your current password for a safer account.</p>
+        </div>
+
+        <%= form_with model: current_user, url: settings_password_path, method: :patch, class: "settings-form" do |form| %>
+          <%= hidden_field_tag :section, "account" %>
+
+          <div class="settings-field">
+            <%= form.label :current_password %>
+            <%= form.password_field :current_password, autocomplete: "current-password", required: true, value: nil %>
+            <% current_user.errors.full_messages_for(:current_password).each do |message| %>
+              <p class="settings-error"><%= message %></p>
+            <% end %>
+          </div>
+
+          <div class="settings-form__row">
+            <div class="settings-field">
+              <%= form.label :password, "New password" %>
+              <%= form.password_field :password, autocomplete: "new-password", required: true, minlength: 8, value: nil %>
+              <% current_user.errors.full_messages_for(:password).each do |message| %>
+                <p class="settings-error"><%= message %></p>
+              <% end %>
+            </div>
+
+            <div class="settings-field">
+              <%= form.label :password_confirmation, "Confirm new password" %>
+              <%= form.password_field :password_confirmation, autocomplete: "new-password", required: true, minlength: 8, value: nil %>
+              <% current_user.errors.full_messages_for(:password_confirmation).each do |message| %>
+                <p class="settings-error"><%= message %></p>
+              <% end %>
+            </div>
+          </div>
+
+          <%= form.submit "Change password", class: "button button--primary" %>
+        <% end %>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-panel" role="tabpanel" aria-labelledby="general-settings-title" data-settings-tabs-target="panel" data-settings-tabs-panel="general" <%= "hidden" unless settings_section == "general" %>>
+    <div class="settings-panel__intro">
+      <h2 id="general-settings-title">General</h2>
+      <p>Choose the defaults used when opening your calendar and upcoming agenda.</p>
+    </div>
+
+    <div class="settings-card settings-card--wide">
+      <div class="settings-card__heading">
+        <h3>Calendar defaults</h3>
+        <p>These values are saved to your account and used whenever a page is opened without an explicit filter.</p>
+      </div>
+
+      <%= form_with model: current_user, url: settings_input_configuration_path, method: :patch, class: "settings-form" do |form| %>
+        <%= hidden_field_tag :section, "general" %>
+
+        <div class="settings-form__row">
+          <div class="settings-field">
+            <%= form.label :default_upcoming_days, "Default days shown in upcoming" %>
+            <%= form.select :default_upcoming_days, options_for_select((1..14).map { |count| [pluralize(count, "day"), count] }, current_user.default_upcoming_days) %>
+            <% current_user.errors.full_messages_for(:default_upcoming_days).each do |message| %>
+              <p class="settings-error"><%= message %></p>
+            <% end %>
+          </div>
+
+          <div class="settings-field">
+            <%= form.label :default_calendar_view %>
+            <%= form.select :default_calendar_view, options_for_select([["Month", "month"], ["Week", "week"]], current_user.default_calendar_view) %>
+            <% current_user.errors.full_messages_for(:default_calendar_view).each do |message| %>
+              <p class="settings-error"><%= message %></p>
+            <% end %>
+          </div>
+        </div>
+
+        <%= form.submit "Save input defaults", class: "button button--primary" %>
+      <% end %>
+    </div>
+  </section>
 </div>
