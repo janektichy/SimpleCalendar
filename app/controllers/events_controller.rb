@@ -187,13 +187,13 @@ class EventsController < ApplicationController
     @event_with_errors = event
     @open_event_modal = event.new_record?
     @new_event = event.new_record? ? event : current_user.events.new(default_event_values)
-    build_calendar_data
+    build_return_view_data
 
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: [
           turbo_stream.update("callback_messages", partial: "shared/callback_messages", locals: { errors: [ event ] }),
-          turbo_stream.replace("calendar_page", partial: "calendar/page")
+          turbo_stream.replace(return_frame_id, partial: return_partial)
         ], status: :unprocessable_entity
       end
       format.html { render "calendar/show", status: :unprocessable_entity }
@@ -204,20 +204,48 @@ class EventsController < ApplicationController
     respond_to do |format|
       format.turbo_stream do
         flash.now[:notice] = message
-        build_calendar_data
+        build_return_view_data
         @new_event = current_user.events.new(default_event_values)
 
         render turbo_stream: [
           turbo_stream.update("callback_messages", partial: "shared/callback_messages"),
-          turbo_stream.replace("calendar_page", partial: "calendar/page")
+          turbo_stream.replace(return_frame_id, partial: return_partial)
         ]
       end
-      format.html { redirect_to calendar_path(calendar_location_params), notice: message }
+      format.html { redirect_to event_return_path, notice: message }
     end
+  end
+
+  def event_return_path
+    return upcoming_path(upcoming_location_params) if params[:date].present? || params[:days].present?
+
+    calendar_path(calendar_location_params)
+  end
+
+  def build_return_view_data
+    return build_upcoming_data if upcoming_return?
+
+    build_calendar_data
+  end
+
+  def return_frame_id
+    upcoming_return? ? "upcoming_page" : "calendar_page"
+  end
+
+  def return_partial
+    upcoming_return? ? "calendar/upcoming_page" : "calendar/page"
+  end
+
+  def upcoming_return?
+    params[:date].present? || params[:days].present?
   end
 
   def calendar_location_params
     params.permit(:view, :month, :week).to_h.compact_blank
+  end
+
+  def upcoming_location_params
+    params.permit(:date, :days).to_h.compact_blank
   end
 
   def default_event_values
@@ -250,6 +278,27 @@ class EventsController < ApplicationController
     event_start = @calendar_view == "week" ? current_week_start : calendar_start
     event_end = @calendar_view == "week" ? current_week_start.end_of_week(:monday) : calendar_end
     @events_by_date = current_user.events.where(starts_at: event_start.beginning_of_day..event_end.end_of_day).chronological.group_by { |item| item.starts_at.to_date }
+  end
+
+  def build_upcoming_data
+    today = Time.zone.today
+    @selected_date = selected_upcoming_date(today)
+    @upcoming_days_count = selected_upcoming_days_count
+    @upcoming_days = (@selected_date...(@selected_date + @upcoming_days_count.days)).to_a
+    @upcoming_month_start = @selected_date.beginning_of_month
+    @upcoming_calendar_days = (@upcoming_month_start.beginning_of_week(:monday)..@upcoming_month_start.end_of_month.end_of_week(:monday)).to_a
+    @today = today
+    @events_by_date = current_user.events.where(starts_at: @selected_date.beginning_of_day..@upcoming_days.last.end_of_day).chronological.group_by { |item| item.starts_at.to_date }
+  end
+
+  def selected_upcoming_date(today)
+    Date.iso8601(params[:date].to_s)
+  rescue Date::Error
+    today
+  end
+
+  def selected_upcoming_days_count
+    params[:days].to_i.clamp(1, 14)
   end
 
   def selected_month_start(today)

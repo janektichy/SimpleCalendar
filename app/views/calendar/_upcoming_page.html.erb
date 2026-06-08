@@ -1,0 +1,124 @@
+<% selected_date = @selected_date || Time.zone.today %>
+<% days_count = @upcoming_days_count || 1 %>
+<% highlighted_dates = @upcoming_days || [selected_date] %>
+<% events_total = @events_by_date.values.flatten.size %>
+<% event_dates = highlighted_dates.select { |date| Array(@events_by_date[date]).any? } %>
+
+<div id="upcoming_page" class="upcoming-shell" data-controller="create-event-modal" data-create-event-modal-open-value="<%= @open_event_modal.present? %>">
+  <header class="upcoming-header">
+    <div>
+      <span class="upcoming-header__eyebrow">Upcoming events</span>
+      <h1><%= selected_date.strftime("%A, %B %-d") %></h1>
+      <p><%= pluralize(events_total, "event") %> across <%= pluralize(days_count, "day") %></p>
+    </div>
+
+    <div class="upcoming-header__actions">
+      <%= form_with url: upcoming_path, method: :get, class: "upcoming-range", data: { turbo_action: "replace" } do |form| %>
+        <%= form.hidden_field :date, value: selected_date.iso8601 %>
+        <%= form.label :days, "Show" %>
+        <%= form.select :days, options_for_select((1..14).map { |count| [pluralize(count, "day"), count] }, days_count), {}, onchange: "this.form.requestSubmit()" %>
+      <% end %>
+      <button type="button" class="button button--primary" data-action="click->create-event-modal#open">+ Add Event</button>
+    </div>
+  </header>
+
+  <div class="upcoming-layout">
+    <aside class="upcoming-calendar" aria-label="Select agenda start date">
+      <div class="upcoming-calendar__header">
+        <%= link_to "‹", upcoming_path(date: selected_date.prev_month.beginning_of_month.iso8601, days: days_count), class: "calendar-shell__nav-button", data: { turbo_action: "replace" }, aria: { label: "Previous month" } %>
+        <span><%= @upcoming_month_start.strftime("%B %Y") %></span>
+        <%= link_to "›", upcoming_path(date: selected_date.next_month.beginning_of_month.iso8601, days: days_count), class: "calendar-shell__nav-button", data: { turbo_action: "replace" }, aria: { label: "Next month" } %>
+      </div>
+
+      <div class="upcoming-calendar__weekdays" aria-hidden="true">
+        <% %w[Mon Tue Wed Thu Fri Sat Sun].each do |weekday| %>
+          <span><%= weekday %></span>
+        <% end %>
+      </div>
+
+      <div class="upcoming-calendar__grid">
+        <% @upcoming_calendar_days.each do |date| %>
+          <% classes = ["upcoming-calendar__day"] %>
+          <% classes << "upcoming-calendar__day--muted" if date.month != @upcoming_month_start.month %>
+          <% classes << "upcoming-calendar__day--today" if date == @today %>
+          <% classes << "upcoming-calendar__day--in-range" if highlighted_dates.include?(date) %>
+          <% classes << "upcoming-calendar__day--selected" if date == selected_date %>
+          <%= link_to date.day, upcoming_path(date: date.iso8601, days: days_count), class: classes.join(" "), data: { turbo_action: "replace" }, aria: { current: (date == selected_date ? "date" : nil), label: date.strftime("%A, %B %-d") } %>
+        <% end %>
+      </div>
+    </aside>
+
+    <section class="upcoming-list" aria-label="Events by day">
+      <% if event_dates.empty? %>
+        <div class="upcoming-empty-period">No event scheduled for the selected period.</div>
+      <% end %>
+
+      <% event_dates.each_with_index do |date, date_index| %>
+        <% if date_index.positive? %>
+          <% gap_days = (date - event_dates[date_index - 1]).to_i - 1 %>
+          <% if gap_days.positive? %>
+            <div class="upcoming-gap" aria-label="<%= pluralize(gap_days, "empty day") %> without events">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          <% end %>
+        <% end %>
+
+        <% day_events = Array(@events_by_date[date]) %>
+        <% full_day_events, timed_events = day_events.partition(&:all_day?) %>
+        <% ordered_events = full_day_events + timed_events %>
+
+        <section class="upcoming-day">
+          <div class="upcoming-day__header">
+            <span class="upcoming-day__date"><%= date.strftime("%A") %></span>
+            <span class="upcoming-day__meta"><%= date.strftime("%B %-d, %Y") %></span>
+          </div>
+
+          <% if ordered_events.any? %>
+            <div class="upcoming-day__events">
+              <% ordered_events.each do |event| %>
+                <% color = event.color.presence || "white" %>
+                <article class="upcoming-event upcoming-event--<%= color %> <%= "upcoming-event--all-day" if event.all_day? %>" data-controller="event-modal delete-modal">
+                  <div class="upcoming-event__time">
+                    <% if event.all_day? %>
+                      <span>All day</span>
+                    <% else %>
+                      <span><%= event.starts_at.strftime("%H:%M") %> - <%= event.ends_at.strftime("%H:%M") %></span>
+                    <% end %>
+                  </div>
+
+                  <div class="upcoming-event__body">
+                    <h3><%= event.title %></h3>
+                    <% if event.description.present? %>
+                      <p><%= event.description %></p>
+                    <% else %>
+                      <p class="upcoming-event__muted"><%= event.all_day? ? "This event is scheduled for the full day." : "No description added." %></p>
+                    <% end %>
+                  </div>
+
+                  <div class="upcoming-event__actions">
+                    <button type="button" class="button button--ghost upcoming-event__action" data-action="click->event-modal#open">Edit</button>
+                    <button type="button" class="button upcoming-event__delete" data-action="click->delete-modal#open">Delete</button>
+                  </div>
+
+                  <%= render "calendar/event_dialogs", event: event, delete_title_id: "delete-upcoming-event-modal-title-#{event.id}", edit_title_id: "edit-upcoming-event-modal-title-#{event.id}", return_params: { date: selected_date.iso8601, days: days_count } %>
+                </article>
+              <% end %>
+            </div>
+          <% end %>
+        </section>
+      <% end %>
+    </section>
+  </div>
+
+  <div class="event-modal" data-create-event-modal-target="overlay" data-action="click->create-event-modal#closeFromBackdrop" hidden>
+    <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="upcoming-event-modal-title">
+      <div class="event-modal__header">
+        <h2 id="upcoming-event-modal-title">Create event</h2>
+        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->create-event-modal#close">×</button>
+      </div>
+      <%= render "events/form", event: @new_event %>
+    </div>
+  </div>
+</div>

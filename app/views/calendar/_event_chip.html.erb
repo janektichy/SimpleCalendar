@@ -57,40 +57,5 @@
     </div>
   </details>
 
-  <div class="event-modal event-modal--confirm" data-delete-modal-target="overlay" data-action="click->delete-modal#closeFromBackdrop" hidden>
-    <div class="event-modal__panel event-modal__panel--confirm" role="dialog" aria-modal="true" aria-labelledby="delete-event-modal-title-<%= event.id %>">
-      <div class="event-modal__header event-modal__header--confirm">
-        <h2 id="delete-event-modal-title-<%= event.id %>">Confirm deletion</h2>
-        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->delete-modal#close">×</button>
-      </div>
-      <p class="event-delete__message">
-        Are you sure you want to delete event <strong><%= event.title %></strong>?
-          <% if event.event_series.present? %>
-            <br>
-          This is a repeated event. Deleting it will also delete all repetitions of this event.
-          <% end %>
-        </p>
-      <div class="event-delete__dialog-actions">
-        <button type="button" class="button event-delete__cancel" data-action="click->delete-modal#close">Cancel</button>
-        <%= form_with url: event_path(event), method: :delete do |form| %>
-          <%= hidden_field_tag :delete_scope, event.event_series.present? ? "series" : "single" %>
-          <%= hidden_field_tag :view, params[:view] if params[:view].present? %>
-          <%= hidden_field_tag :month, params[:month] if params[:month].present? %>
-          <%= hidden_field_tag :week, params[:week] if params[:week].present? %>
-          <%= form.submit "Delete event", class: "button event-delete__confirm" %>
-        <% end %>
-      </div>
-    </div>
-  </div>
-
-  <div class="event-modal" data-event-modal-target="overlay" data-action="click->event-modal#closeFromBackdrop" hidden>
-    <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="edit-event-modal-title-<%= event.id %>">
-      <div class="event-modal__header">
-        <h2 id="edit-event-modal-title-<%= event.id %>">Edit event</h2>
-        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->event-modal#close">×</button>
-      </div>
-      <% form_event = (@event_with_errors&.id == event.id ? @event_with_errors : event) %>
-      <%= render "events/form", event: form_event, form_url: event_path(event), form_method: :patch, submit_label: "Save changes" %>
-    </div>
-  </div>
+  <%= render "calendar/event_dialogs", event: event, return_params: params.permit(:view, :month, :week).to_h %>
 </div>

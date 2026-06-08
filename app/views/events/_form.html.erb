@@ -12,6 +12,8 @@
   <%= hidden_field_tag :view, params[:view] if params[:view].present? %>
   <%= hidden_field_tag :month, params[:month] if params[:month].present? %>
   <%= hidden_field_tag :week, params[:week] if params[:week].present? %>
+  <%= hidden_field_tag :date, params[:date] if params[:date].present? %>
+  <%= hidden_field_tag :days, params[:days] if params[:days].present? %>
 
   <div class="event-form__grid">
     <div class="form__group event-form__group event-form__full">

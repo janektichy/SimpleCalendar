@@ -6,7 +6,10 @@ class CalendarController < ApplicationController
     @new_event ||= current_user.events.new(default_event_values)
   end
 
-  def upcoming; end
+  def upcoming
+    build_upcoming_data
+    @new_event ||= current_user.events.new(default_event_values)
+  end
 
   def settings; end
 
@@ -29,6 +32,27 @@ class CalendarController < ApplicationController
     event_start = @calendar_view == "week" ? current_week_start : calendar_start
     event_end = @calendar_view == "week" ? current_week_start.end_of_week(:monday) : calendar_end
     @events_by_date = current_user.events.where(starts_at: event_start.beginning_of_day..event_end.end_of_day).chronological.group_by { |event| event.starts_at.to_date }
+  end
+
+  def build_upcoming_data
+    today = Time.zone.today
+    @selected_date = selected_upcoming_date(today)
+    @upcoming_days_count = selected_upcoming_days_count
+    @upcoming_days = (@selected_date...(@selected_date + @upcoming_days_count.days)).to_a
+    @upcoming_month_start = @selected_date.beginning_of_month
+    @upcoming_calendar_days = (@upcoming_month_start.beginning_of_week(:monday)..@upcoming_month_start.end_of_month.end_of_week(:monday)).to_a
+    @today = today
+    @events_by_date = current_user.events.where(starts_at: @selected_date.beginning_of_day..@upcoming_days.last.end_of_day).chronological.group_by { |event| event.starts_at.to_date }
+  end
+
+  def selected_upcoming_date(today)
+    Date.iso8601(params[:date].to_s)
+  rescue Date::Error
+    today
+  end
+
+  def selected_upcoming_days_count
+    params[:days].to_i.clamp(1, 14)
   end
 
   def selected_month_start(today)
