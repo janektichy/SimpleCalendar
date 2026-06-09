@@ -420,8 +420,12 @@
   position: absolute;
   left: calc(0.35rem + (var(--overlap-index, 0) * 2.25rem));
   right: 0.35rem;
-  min-height: 12px;
+  min-height: 28px;
   z-index: calc(2 + var(--overlap-index, 0));
+}
+
+.calendar-week-view__event--all-day {
+  min-height: 100%;
 }
 
 .calendar-week-view__event > div,
@@ -682,6 +686,32 @@
 .event-popover--up .event-popover__panel {
   top: auto;
   bottom: calc(100% + 0.35rem);
+}
+
+.event-popover--week .event-popover__panel {
+  max-height: min(360px, calc(var(--week-viewport-height) - 2rem));
+  overflow-y: auto;
+  transform: none;
+}
+
+.event-popover--week.event-popover--down .event-popover__panel {
+  top: calc(100% + 0.35rem);
+  bottom: auto;
+}
+
+.event-popover--week.event-popover--right .event-popover__panel,
+.event-popover--week.event-popover--left .event-popover__panel {
+  top: var(--week-popover-top, 0);
+  bottom: auto;
+}
+
+.event-popover--week.event-popover--right .event-popover__panel {
+  left: calc(100% + 0.45rem);
+}
+
+.event-popover--week.event-popover--left .event-popover__panel {
+  left: auto;
+  right: calc(100% + 0.45rem);
 }
 
 .event-popover__panel--white {

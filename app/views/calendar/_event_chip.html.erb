@@ -1,6 +1,9 @@
 <div data-controller="event-modal delete-modal" data-event-modal-open-value="<%= @event_with_errors&.id == event.id %>">
+  <% popover_context = local_assigns.fetch(:popover_context, :month) %>
   <% popover_classes = ["event-popover"] %>
-  <% popover_classes << "event-popover--up" if week_index >= (days.length - 2) %>
+  <% popover_classes << "event-popover--week" if popover_context.to_s == "week" %>
+  <% popover_classes << "event-popover--all-day" if popover_context.to_s == "week" && event.all_day? %>
+  <% popover_classes << "event-popover--up" if popover_context.to_s != "week" && week_index >= (days.length - 2) %>
   <details class="<%= popover_classes.join(' ') %>" data-controller="event-popover" data-action="toggle->event-popover#handleToggle click@window->event-popover#closeFromOutside keydown.esc@window->event-popover#close">
     <summary class="event-chip event-chip--<%= event.color %>">
       <span class="event-chip__title"><%= event.title %></span>

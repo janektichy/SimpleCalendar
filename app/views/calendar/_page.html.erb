@@ -66,8 +66,8 @@
                 <% timed_events.each do |event| %>
                   <% starts_at = event.starts_at.in_time_zone %>
                   <% ends_at = event.ends_at.in_time_zone %>
-                  <% starts_minutes = starts_at.hour * 60 + starts_at.min %>
-                  <% duration_minutes = event.all_day? ? 60 : [((ends_at - starts_at) / 60).round, 1].max %>
+                  <% starts_minutes = event.all_day? ? 0 : starts_at.hour * 60 + starts_at.min %>
+                  <% duration_minutes = event.all_day? ? 24 * 60 : [((ends_at - starts_at) / 60).round, 1].max %>
                   <% event_layouts[event.id] = { start: starts_minutes, end_time: starts_minutes + duration_minutes, index: 0, count: 1 } %>
                 <% end %>
                 <% timed_events.each do |event| %>
@@ -85,13 +85,15 @@
                 <% timed_events.each do |event| %>
                   <% starts_at = event.starts_at.in_time_zone %>
                   <% ends_at = event.ends_at.in_time_zone %>
-                  <% starts_minutes = starts_at.hour * 60 + starts_at.min %>
-                  <% duration_minutes = event.all_day? ? 60 : [((ends_at - starts_at) / 60).round, 1].max %>
+                  <% starts_minutes = event.all_day? ? 0 : starts_at.hour * 60 + starts_at.min %>
+                  <% duration_minutes = event.all_day? ? 24 * 60 : [((ends_at - starts_at) / 60).round, 1].max %>
                   <% layout = event_layouts[event.id] %>
                   <% top = starts_minutes / 60.0 * hour_height %>
-                  <% height = event.all_day? ? 30 : duration_minutes / 60.0 * hour_height %>
-                  <div class="calendar-week-view__event" style="top: <%= top %>px; height: <%= height %>px; --overlap-index: <%= layout[:index] %>; --overlap-count: <%= layout[:count] %>;">
-                    <%= render "calendar/event_chip", event: event, days: [@week_days], week_index: day_index %>
+                  <% height = duration_minutes / 60.0 * hour_height %>
+                  <% event_classes = ["calendar-week-view__event"] %>
+                  <% event_classes << "calendar-week-view__event--all-day" if event.all_day? %>
+                  <div class="<%= event_classes.join(" ") %>" style="top: <%= top %>px; height: <%= height %>px; --overlap-index: <%= layout[:index] %>; --overlap-count: <%= layout[:count] %>;">
+                    <%= render "calendar/event_chip", event: event, days: @week_days, week_index: day_index, popover_context: :week %>
                   </div>
                 <% end %>
               </div>
