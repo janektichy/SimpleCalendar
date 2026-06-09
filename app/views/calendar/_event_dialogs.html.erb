@@ -2,11 +2,11 @@
 <% edit_title_id = local_assigns.fetch(:edit_title_id, "edit-event-modal-title-#{event.id}") %>
 <% return_params = local_assigns.fetch(:return_params, {}) %>
 
-<div class="event-modal event-modal--confirm" data-delete-modal-target="overlay" data-action="click->delete-modal#closeFromBackdrop" hidden>
+<div class="event-modal event-modal--confirm" data-modal-target="deleteOverlay" data-action="click->modal#closeDeleteFromBackdrop" hidden>
   <div class="event-modal__panel event-modal__panel--confirm" role="dialog" aria-modal="true" aria-labelledby="<%= delete_title_id %>">
     <div class="event-modal__header event-modal__header--confirm">
       <h2 id="<%= delete_title_id %>">Confirm deletion</h2>
-      <button type="button" class="event-modal__close" aria-label="Close" data-action="click->delete-modal#close">×</button>
+      <button type="button" class="event-modal__close" aria-label="Close" data-action="click->modal#closeDelete">×</button>
     </div>
     <p class="event-delete__message">
       Are you sure you want to delete event <strong><%= event.title %></strong>?
@@ -16,7 +16,7 @@
       <% end %>
     </p>
     <div class="event-delete__dialog-actions">
-      <button type="button" class="button event-delete__cancel" data-action="click->delete-modal#close">Cancel</button>
+      <button type="button" class="button event-delete__cancel" data-action="click->modal#closeDelete">Cancel</button>
       <%= form_with url: event_path(event), method: :delete do |form| %>
         <%= hidden_field_tag :delete_scope, event.event_series.present? ? "series" : "single" %>
         <% return_params.each do |name, value| %>
@@ -28,11 +28,11 @@
   </div>
 </div>
 
-<div class="event-modal" data-event-modal-target="overlay" data-action="click->event-modal#closeFromBackdrop" hidden>
+<div class="event-modal" data-modal-target="editOverlay" data-action="click->modal#closeEditFromBackdrop" hidden>
   <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="<%= edit_title_id %>">
     <div class="event-modal__header">
       <h2 id="<%= edit_title_id %>">Edit event</h2>
-      <button type="button" class="event-modal__close" aria-label="Close" data-action="click->event-modal#close">×</button>
+      <button type="button" class="event-modal__close" aria-label="Close" data-action="click->modal#closeEdit">×</button>
     </div>
     <% form_event = (@event_with_errors&.id == event.id ? @event_with_errors : event) %>
     <%= render "events/form", event: form_event, form_url: event_path(event), form_method: :patch, submit_label: "Save changes" %>

@@ -1,4 +1,4 @@
-<div data-controller="event-modal delete-modal" data-event-modal-open-value="<%= @event_with_errors&.id == event.id %>">
+<div data-controller="modal" data-modal-open-value="<%= @event_with_errors&.id == event.id %>">
   <% popover_context = local_assigns.fetch(:popover_context, :month) %>
   <% popover_classes = ["event-popover"] %>
   <% popover_classes << "event-popover--week" if popover_context.to_s == "week" %>
@@ -54,8 +54,8 @@
       </div>
 
       <div class="event-popover__actions">
-        <button type="button" class="button button--ghost event-popover__action" data-action="click->event-modal#open">Edit</button>
-        <button type="button" class="button event-delete__summary" data-action="click->delete-modal#open">Delete</button>
+        <button type="button" class="button button--ghost event-popover__action" data-action="click->modal#openEdit">Edit</button>
+        <button type="button" class="button event-delete__summary" data-action="click->modal#openDelete">Delete</button>
       </div>
     </div>
   </details>

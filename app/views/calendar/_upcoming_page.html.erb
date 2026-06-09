@@ -4,7 +4,7 @@
 <% events_total = @events_by_date.values.flatten.size %>
 <% event_dates = highlighted_dates.select { |date| Array(@events_by_date[date]).any? } %>
 
-<div id="upcoming_page" class="upcoming-shell" data-controller="create-event-modal" data-create-event-modal-open-value="<%= @open_event_modal.present? %>">
+<div id="upcoming_page" class="upcoming-shell" data-controller="modal" data-modal-open-value="<%= @open_event_modal.present? %>">
   <header class="upcoming-header">
     <div>
       <span class="upcoming-header__eyebrow">Upcoming events</span>
@@ -19,7 +19,7 @@
         <%= form.label :days, "Show" %>
         <%= form.select :days, options_for_select((1..14).map { |count| [pluralize(count, "day"), count] }, days_count), {}, onchange: "this.form.requestSubmit()" %>
       <% end %>
-      <button type="button" class="button button--primary" data-action="click->create-event-modal#open">+ Add Event</button>
+      <button type="button" class="button button--primary" data-action="click->modal#openCreate">+ Add Event</button>
     </div>
   </header>
 
@@ -80,7 +80,7 @@
             <div class="upcoming-day__events">
               <% ordered_events.each do |event| %>
                 <% color = event.color.presence || "white" %>
-                <article class="upcoming-event upcoming-event--<%= color %> <%= "upcoming-event--all-day" if event.all_day? %>" data-controller="event-modal delete-modal">
+                <article class="upcoming-event upcoming-event--<%= color %> <%= "upcoming-event--all-day" if event.all_day? %>" data-controller="modal">
                   <div class="upcoming-event__time">
                     <% if event.all_day? %>
                       <span>All day</span>
@@ -99,8 +99,8 @@
                   </div>
 
                   <div class="upcoming-event__actions">
-                    <button type="button" class="button button--ghost upcoming-event__action" data-action="click->event-modal#open">Edit</button>
-                    <button type="button" class="button upcoming-event__delete" data-action="click->delete-modal#open">Delete</button>
+                    <button type="button" class="button button--ghost upcoming-event__action" data-action="click->modal#openEdit">Edit</button>
+                    <button type="button" class="button upcoming-event__delete" data-action="click->modal#openDelete">Delete</button>
                   </div>
 
                   <%= render "calendar/event_dialogs", event: event, delete_title_id: "delete-upcoming-event-modal-title-#{event.id}", edit_title_id: "edit-upcoming-event-modal-title-#{event.id}", return_params: { date: selected_date.iso8601, days: days_count } %>
@@ -113,11 +113,11 @@
     </section>
   </div>
 
-  <div class="event-modal" data-create-event-modal-target="overlay" data-action="click->create-event-modal#closeFromBackdrop" hidden>
+  <div class="event-modal" data-modal-target="overlay" data-action="click->modal#closeCreateFromBackdrop" hidden>
     <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="upcoming-event-modal-title">
       <div class="event-modal__header">
         <h2 id="upcoming-event-modal-title">Create event</h2>
-        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->create-event-modal#close">×</button>
+        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->modal#closeCreate">×</button>
       </div>
       <%= render "events/form", event: @new_event %>
     </div>

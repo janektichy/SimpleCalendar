@@ -9,7 +9,7 @@
 <% week_switch_start = selected_month == today.beginning_of_month ? today.beginning_of_week(:monday) : selected_month.beginning_of_week(:monday) %>
 <% header_title = calendar_view == "week" ? "#{selected_week.strftime("%b %-d")} - #{selected_week.end_of_week(:monday).strftime("%b %-d, %Y")}" : selected_month.strftime("%B %Y") %>
 
-<div id="calendar_page" class="calendar-shell" data-controller="create-event-modal" data-create-event-modal-open-value="<%= @open_event_modal.present? %>">
+<div id="calendar_page" class="calendar-shell" data-controller="modal" data-modal-open-value="<%= @open_event_modal.present? %>">
   <div class="calendar-shell__header">
     <div class="calendar-shell__left">
       <div class="calendar-shell__nav">
@@ -24,14 +24,14 @@
         <%= link_to "Month", calendar_path(view: "month", month: selected_week.end_of_week(:monday).strftime("%Y-%m")), class: ("is-active" if calendar_view == "month"), data: { turbo_action: "replace" } %>
         <%= link_to "Week", calendar_path(view: "week", week: week_switch_start.iso8601), class: ("is-active" if calendar_view == "week"), data: { turbo_action: "replace" } %>
       </div>
-      <button type="button" class="button button--primary" data-action="click->create-event-modal#open">+ Add Event</button>
+      <button type="button" class="button button--primary" data-action="click->modal#openCreate">+ Add Event</button>
     </div>
   </div>
 
   <% if calendar_view == "week" %>
     <% hours = (0..23).to_a %>
     <% hour_height = 64 %>
-    <div class="calendar-week-view" style="--hour-height: <%= hour_height %>px;" role="grid" aria-label="Weekly calendar" data-controller="week-calendar-scroll">
+    <div class="calendar-week-view" style="--hour-height: <%= hour_height %>px;" role="grid" aria-label="Weekly calendar" data-controller="week-calendar-scroll" data-week-calendar-scroll-hour-value="6" data-week-calendar-scroll-hour-height-value="<%= hour_height %>">
       <div class="calendar-week-view__viewport" data-week-calendar-scroll-target="viewport">
         <div class="calendar-week-view__header">
           <div class="calendar-week-view__corner" aria-hidden="true"></div>
@@ -156,11 +156,11 @@
     </div>
   <% end %>
 
-  <div class="event-modal" data-create-event-modal-target="overlay" data-action="click->create-event-modal#closeFromBackdrop" hidden>
+  <div class="event-modal" data-modal-target="overlay" data-action="click->modal#closeCreateFromBackdrop" hidden>
     <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
       <div class="event-modal__header">
         <h2 id="event-modal-title">Create event</h2>
-        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->create-event-modal#close">×</button>
+        <button type="button" class="event-modal__close" aria-label="Close" data-action="click->modal#closeCreate">×</button>
       </div>
       <%= render "events/form", event: @new_event %>
     </div>
