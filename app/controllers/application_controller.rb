@@ -25,6 +25,19 @@ class ApplicationController < ActionController::Base
     redirect_to new_session_path, alert: "Please sign in to continue."
   end
 
+  def default_event_values
+    now = Time.zone.now.change(min: 0)
+    {
+      starts_at: now,
+      ends_at: now + 1.hour,
+      color: "white",
+      event_date: now.to_date.iso8601,
+      start_time: now.strftime("%H:%M"),
+      end_time: (now + 1.hour).strftime("%H:%M"),
+      repeat_frequency: "weekly"
+    }
+  end
+
   # Keeps signed-in users from seeing auth pages again
   def redirect_authenticated_user
     redirect_to calendar_path if user_signed_in?

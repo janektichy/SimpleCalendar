@@ -2,7 +2,7 @@
 <% edit_title_id = local_assigns.fetch(:edit_title_id, "edit-event-modal-title-#{event.id}") %>
 <% return_params = local_assigns.fetch(:return_params, {}) %>
 
-<div class="event-modal event-modal--confirm" data-modal-target="deleteOverlay" data-action="click->modal#closeDeleteFromBackdrop" hidden>
+<div class="event-modal event-modal--confirm" data-modal-target="deleteOverlay" hidden>
   <div class="event-modal__panel event-modal__panel--confirm" role="dialog" aria-modal="true" aria-labelledby="<%= delete_title_id %>">
     <div class="event-modal__header event-modal__header--confirm">
       <h2 id="<%= delete_title_id %>">Confirm deletion</h2>
@@ -17,7 +17,7 @@
     </p>
     <div class="event-delete__dialog-actions">
       <button type="button" class="button event-delete__cancel" data-action="click->modal#closeDelete">Cancel</button>
-      <%= form_with url: event_path(event), method: :delete do |form| %>
+      <%= form_with url: event_path(event), method: :delete, data: { turbo: false } do |form| %>
         <%= hidden_field_tag :delete_scope, event.event_series.present? ? "series" : "single" %>
         <% return_params.each do |name, value| %>
           <%= hidden_field_tag name, value if value.present? %>
@@ -28,7 +28,7 @@
   </div>
 </div>
 
-<div class="event-modal" data-modal-target="editOverlay" data-action="click->modal#closeEditFromBackdrop" hidden>
+<div class="event-modal" data-modal-target="editOverlay" hidden>
   <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="<%= edit_title_id %>">
     <div class="event-modal__header">
       <h2 id="<%= edit_title_id %>">Edit event</h2>

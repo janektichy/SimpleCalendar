@@ -3,6 +3,7 @@
   <% popover_classes = ["event-popover"] %>
   <% popover_classes << "event-popover--week" if popover_context.to_s == "week" %>
   <% popover_classes << "event-popover--all-day" if popover_context.to_s == "week" && event.all_day? %>
+  <% popover_classes << (week_index < 4 ? "event-popover--right" : "event-popover--left") if popover_context.to_s == "week" %>
   <% popover_classes << "event-popover--up" if popover_context.to_s != "week" && week_index >= (days.length - 2) %>
   <details class="<%= popover_classes.join(' ') %>" data-controller="event-popover" data-action="toggle->event-popover#handleToggle click@window->event-popover#closeFromOutside keydown.esc@window->event-popover#close">
     <summary class="event-chip event-chip--<%= event.color %>">

@@ -1,12 +1,28 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+  connect() {
+    this.panelPlaceholder = null
+    this.layeredPanel = null
+    this.ownerModalElement = null
+    this.ownerModalController = null
+    this.layeredActionHandlers = []
+  }
+
+  disconnect() {
+    this.restorePanelFromWeekLayer()
+  }
+
   handleToggle() {
-    if (!this.element.open) return
+    if (!this.element.open) {
+      this.clearWeekPopoverPosition()
+      return
+    }
 
     document.querySelectorAll("details.event-popover[open]").forEach((popover) => {
       if (popover !== this.element) {
         popover.removeAttribute("open")
+        popover.dispatchEvent(new Event("toggle"))
       }
     })
 
@@ -22,45 +38,115 @@ export default class extends Controller {
 
   close() {
     this.element.removeAttribute("open")
+    this.clearWeekPopoverPosition()
   }
 
   positionWeekPopover() {
     if (!this.element.classList.contains("event-popover--week")) return
 
-    this.element.classList.remove("event-popover--up", "event-popover--down", "event-popover--left", "event-popover--right")
-    this.element.style.removeProperty("--week-popover-top")
+    this.clearWeekPopoverPosition()
 
     const panel = this.element.querySelector(".event-popover__panel")
-    const viewport = this.element.closest(".calendar-week-view__viewport")
-    if (!panel || !viewport) return
+    if (!panel) return
 
     const gap = 8
+    const weekView = this.element.closest(".calendar-week-view")
+    const popoverLayer = weekView?.querySelector(".calendar-week-view__popover-layer")
+    if (!weekView || !popoverLayer) return
+
     const triggerRect = this.element.getBoundingClientRect()
-    const viewportRect = viewport.getBoundingClientRect()
-    const panelHeight = panel.offsetHeight
-    const spaceBelow = viewportRect.bottom - triggerRect.bottom
-    const spaceAbove = triggerRect.top - viewportRect.top
+    this.movePanelToWeekLayer(panel, popoverLayer)
+
+    const panelRect = panel.getBoundingClientRect()
+    const scrollViewport = this.element.closest(".calendar-week-view__viewport")
+    const viewportRect = scrollViewport?.getBoundingClientRect()
+    const weekViewRect = weekView.getBoundingClientRect()
+    const visibleTop = viewportRect?.top ?? 0
+    const visibleBottom = viewportRect?.bottom ?? window.innerHeight
+    let top
 
     if (this.element.classList.contains("event-popover--all-day")) {
-      this.positionAllDayWeekPopover(panelHeight, triggerRect, viewportRect, gap)
-    } else if (spaceBelow >= panelHeight + gap || spaceBelow >= spaceAbove) {
-      this.element.classList.add("event-popover--down")
+      top = Math.min(visibleTop + 100, visibleBottom - panelRect.height - gap) - weekViewRect.top
     } else {
-      this.element.classList.add("event-popover--up")
+      top = Math.max(triggerRect.top, visibleTop) - weekViewRect.top
     }
+
+    const left = this.element.classList.contains("event-popover--left")
+      ? triggerRect.left - weekViewRect.left - panelRect.width - gap
+      : triggerRect.right - weekViewRect.left + gap
+
+    this.element.style.setProperty("--week-popover-top", `${top}px`)
+    this.element.style.setProperty("--week-popover-left", `${left}px`)
+    panel.style.setProperty("--week-popover-top", `${top}px`)
+    panel.style.setProperty("--week-popover-left", `${left}px`)
+    this.prepareLayeredPanelActions(panel)
+    panel.classList.add("event-popover__panel--week-layered")
   }
 
-  positionAllDayWeekPopover(panelHeight, triggerRect, viewportRect, gap) {
-    const dayColumn = this.element.closest(".calendar-week-view__day-column")
-    const dayColumns = Array.from(this.element.closest(".calendar-week-view__grid")?.querySelectorAll(".calendar-week-view__day-column") || [])
-    const dayIndex = dayColumns.indexOf(dayColumn)
+  clearWeekPopoverPosition() {
+    if (!this.element.classList.contains("event-popover--week")) return
 
-    this.element.classList.add(dayIndex >= 4 ? "event-popover--left" : "event-popover--right")
+    this.element.classList.remove("event-popover--positioned-week")
+    this.element.style.removeProperty("--week-popover-top")
+    this.element.style.removeProperty("--week-popover-left")
+    this.restorePanelFromWeekLayer()
+  }
 
-    const visibleTop = viewportRect.top + 120
-    const visibleBottom = viewportRect.bottom - gap
-    const desiredTop = Math.max(visibleTop, Math.min(triggerRect.top + gap, visibleBottom - panelHeight))
+  movePanelToWeekLayer(panel, popoverLayer) {
+    if (!this.panelPlaceholder) {
+      this.panelPlaceholder = document.createComment("event popover panel")
+    }
 
-    this.element.style.setProperty("--week-popover-top", `${desiredTop - triggerRect.top}px`)
+    panel.before(this.panelPlaceholder)
+    popoverLayer.appendChild(panel)
+    this.layeredPanel = panel
+    this.element.classList.add("event-popover--positioned-week")
+  }
+
+  restorePanelFromWeekLayer() {
+    if (!this.panelPlaceholder || !this.layeredPanel) return
+
+    const panel = this.layeredPanel
+
+    panel.classList.remove("event-popover__panel--week-layered")
+    panel.style.removeProperty("--week-popover-top")
+    panel.style.removeProperty("--week-popover-left")
+    this.restoreLayeredPanelActions(panel)
+    this.panelPlaceholder.replaceWith(panel)
+    this.layeredPanel = null
+    this.ownerModalElement = null
+    this.ownerModalController = null
+  }
+
+  prepareLayeredPanelActions(panel) {
+    this.ownerModalElement = this.element.closest("[data-controller~='modal']")
+    this.ownerModalController = this.application.getControllerForElementAndIdentifier(this.ownerModalElement, "modal")
+    if (!this.ownerModalElement) return
+
+    this.addLayeredActionHandler(panel, "[data-action*='modal#openEdit']", (event) => this.openOwnerModal(event, "openEdit"))
+    this.addLayeredActionHandler(panel, "[data-action*='modal#openDelete']", (event) => this.openOwnerModal(event, "openDelete"))
+  }
+
+  restoreLayeredPanelActions(panel) {
+    this.layeredActionHandlers.forEach(({ button, handler }) => {
+      button.removeEventListener("click", handler)
+    })
+    this.layeredActionHandlers = []
+  }
+
+  addLayeredActionHandler(panel, selector, handler) {
+    panel.querySelectorAll(selector).forEach((button) => {
+      button.addEventListener("click", handler)
+      this.layeredActionHandlers.push({ button, handler })
+    })
+  }
+
+  openOwnerModal(event, actionName) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const modalController = this.ownerModalController
+    this.close()
+    modalController?.[actionName]?.()
   }
 }

@@ -62,23 +62,54 @@
               <% column_classes << "calendar-week-view__day-column--today" if date == today %>
               <div class="<%= column_classes.join(" ") %>" role="gridcell" aria-label="<%= date.strftime("%A, %B %-d") %>">
                 <% timed_events = Array(@events_by_date[date]) %>
-                <% event_layouts = {} %>
-                <% timed_events.each do |event| %>
+                <% overlap_start_threshold = 20 %>
+                <% overlap_end_threshold = 5 %>
+                <% event_layouts = timed_events.each_with_object({}) do |event, layouts| %>
                   <% starts_at = event.starts_at.in_time_zone %>
                   <% ends_at = event.ends_at.in_time_zone %>
                   <% starts_minutes = event.all_day? ? 0 : starts_at.hour * 60 + starts_at.min %>
                   <% duration_minutes = event.all_day? ? 24 * 60 : [((ends_at - starts_at) / 60).round, 1].max %>
-                  <% event_layouts[event.id] = { start: starts_minutes, end_time: starts_minutes + duration_minutes, index: 0, count: 1 } %>
+                  <% layouts[event.id] = { start: starts_minutes, end_time: starts_minutes + duration_minutes, duration: duration_minutes, column: 0, column_count: 1, all_day: event.all_day? } %>
                 <% end %>
-                <% timed_events.each do |event| %>
+                <% visual_conflicts = Hash.new { |hash, key| hash[key] = [] } %>
+                <% timed_events.reject(&:all_day?).combination(2) do |event, other_event| %>
                   <% layout = event_layouts[event.id] %>
-                  <% overlapping_events = timed_events.select do |other_event| %>
-                    <% other_layout = event_layouts[other_event.id] %>
-                    <% layout[:start] < other_layout[:end_time] && other_layout[:start] < layout[:end_time] %>
+                  <% other_layout = event_layouts[other_event.id] %>
+                  <% events_overlap = layout[:start] < other_layout[:end_time] && other_layout[:start] < layout[:end_time] %>
+                  <% starts_are_close = (layout[:start] - other_layout[:start]).abs <= overlap_start_threshold %>
+                  <% ends_are_close = (layout[:end_time] - other_layout[:end_time]).abs <= overlap_end_threshold %>
+                  <% if events_overlap && (starts_are_close || ends_are_close) %>
+                    <% visual_conflicts[event.id] << other_event %>
+                    <% visual_conflicts[other_event.id] << event %>
                   <% end %>
-                  <% overlapping_events.each_with_index do |overlap_event, overlap_index| %>
-                    <% event_layouts[overlap_event.id][:index] = [event_layouts[overlap_event.id][:index], overlap_index].max %>
-                    <% event_layouts[overlap_event.id][:count] = [event_layouts[overlap_event.id][:count], overlapping_events.size].max %>
+                <% end %>
+                <% grouped_event_ids = Set.new %>
+                <% timed_events.reject(&:all_day?).each do |event| %>
+                  <% next if grouped_event_ids.include?(event.id) || visual_conflicts[event.id].empty? %>
+                  <% group = [] %>
+                  <% pending_events = [event] %>
+                  <% until pending_events.empty? %>
+                    <% group_event = pending_events.shift %>
+                    <% next if grouped_event_ids.include?(group_event.id) %>
+                    <% grouped_event_ids << group_event.id %>
+                    <% group << group_event %>
+                    <% pending_events.concat(visual_conflicts[group_event.id].reject { |conflict_event| grouped_event_ids.include?(conflict_event.id) }) %>
+                  <% end %>
+                  <% column_end_times = [] %>
+                  <% group.sort_by { |group_event| [event_layouts[group_event.id][:start], -event_layouts[group_event.id][:duration], group_event.id] }.each do |group_event| %>
+                    <% layout = event_layouts[group_event.id] %>
+                    <% column_index = column_end_times.index { |end_time| end_time <= layout[:start] } || column_end_times.length %>
+                    <% column_end_times[column_index] = layout[:end_time] %>
+                    <% layout[:column] = column_index %>
+                  <% end %>
+                  <% if column_end_times.length > 1 %>
+                    <% group.each do |group_event| %>
+                      <% event_layouts[group_event.id][:column_count] = column_end_times.length %>
+                    <% end %>
+                  <% else %>
+                    <% group.each do |group_event| %>
+                      <% event_layouts[group_event.id][:column] = 0 %>
+                    <% end %>
                   <% end %>
                 <% end %>
 
@@ -90,9 +121,12 @@
                   <% layout = event_layouts[event.id] %>
                   <% top = starts_minutes / 60.0 * hour_height %>
                   <% height = duration_minutes / 60.0 * hour_height %>
+                  <% event_width = 100.0 / layout[:column_count] %>
+                  <% event_left = event_width * layout[:column] %>
+                  <% event_layer = 2 + (starts_minutes / 60) %>
                   <% event_classes = ["calendar-week-view__event"] %>
                   <% event_classes << "calendar-week-view__event--all-day" if event.all_day? %>
-                  <div class="<%= event_classes.join(" ") %>" style="top: <%= top %>px; height: <%= height %>px; --overlap-index: <%= layout[:index] %>; --overlap-count: <%= layout[:count] %>;">
+                  <div class="<%= event_classes.join(" ") %>" style="--event-top: <%= top %>px; --event-height: <%= height %>px; --event-left: <%= event_left %>%; --event-width: <%= event_width %>%; --event-layer: <%= event_layer %>; top: var(--event-top); height: var(--event-height);">
                     <%= render "calendar/event_chip", event: event, days: @week_days, week_index: day_index, popover_context: :week %>
                   </div>
                 <% end %>
@@ -101,6 +135,7 @@
           </div>
         </div>
       </div>
+      <div class="calendar-week-view__popover-layer"></div>
     </div>
   <% else %>
     <div class="calendar-weekdays">
@@ -156,7 +191,7 @@
     </div>
   <% end %>
 
-  <div class="event-modal" data-modal-target="overlay" data-action="click->modal#closeCreateFromBackdrop" hidden>
+  <div class="event-modal" data-modal-target="overlay" hidden>
     <div class="event-modal__panel" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
       <div class="event-modal__header">
         <h2 id="event-modal-title">Create event</h2>

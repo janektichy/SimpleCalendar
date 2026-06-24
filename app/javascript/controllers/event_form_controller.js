@@ -4,6 +4,10 @@ export default class extends Controller {
   static targets = ["allDay", "startTime", "endTime", "repeatToggle", "repeatFields", "repeatInput"]
 
   connect() {
+    this.refreshState()
+  }
+
+  refreshState() {
     this.previousStartTime = this.startTimeTarget.value
     this.toggleAllDay()
     this.toggleRepeat()

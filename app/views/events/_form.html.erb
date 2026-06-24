@@ -8,7 +8,7 @@
 <% submit_label = local_assigns.fetch(:submit_label, event.persisted? ? "Save changes" : "Create event") %>
 <% cancel_action = local_assigns.fetch(:cancel_action, event.persisted? ? "click->modal#closeEdit" : "click->modal#closeCreate") %>
 
-<%= form_with model: event, url: form_url, method: form_method, class: "event-form", data: { turbo: true, controller: "event-form" } do |form| %>
+<%= form_with model: event, url: form_url, method: form_method, class: "event-form", data: { turbo: false, controller: "event-form", action: "reset->event-form#refreshState" } do |form| %>
   <%= hidden_field_tag :view, params[:view] if params[:view].present? %>
   <%= hidden_field_tag :month, params[:month] if params[:month].present? %>
   <%= hidden_field_tag :week, params[:week] if params[:week].present? %>
