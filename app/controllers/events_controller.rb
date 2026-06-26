@@ -7,9 +7,11 @@ class EventsController < ApplicationController
 
   def create
     event = current_user.events.new(base_event_params)
-    Events::AssignSchedule.call(event: event, input: event_input)
+    schedule_assigned = Events::AssignSchedule.call(event: event, input: event_input)
 
-    if repeat_event?
+    if !schedule_assigned
+      render_return_page_with_errors(event)
+    elsif repeat_event?
       create_repeated_events(event)
     elsif event.save
       redirect_to event_return_path, notice: "Event created."
@@ -19,9 +21,9 @@ class EventsController < ApplicationController
   end
 
   def update
-    Events::AssignSchedule.call(event: @event, input: event_input)
+    schedule_assigned = Events::AssignSchedule.call(event: @event, input: event_input)
 
-    if @event.errors.none? && @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at))
+    if schedule_assigned && @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at))
       redirect_to event_return_path, notice: "Event updated."
     else
       render_return_page_with_errors(@event)
@@ -125,7 +127,7 @@ class EventsController < ApplicationController
 
   # Whitelists event form fields, including virtual date/time inputs.
   def event_params
-    params.require(:event).permit(:title, :description, :all_day, :color, :event_date, :start_time, :end_time)
+    params.require(:event).permit(:title, :description, :all_day, :color, :event_date, :start_time, :end_time, :repeat_event, :repeat_frequency)
   end
 
   # Preserves calendar position after redirects and validation errors.

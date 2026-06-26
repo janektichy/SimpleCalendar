@@ -12,7 +12,6 @@ module Events
     def call
       assign_form_state
       assign_schedule
-      event
     end
 
     private
@@ -32,13 +31,13 @@ module Events
 
       unless event_date
         event.errors.add(:starts_at, "date is required")
-        return
+        return false
       end
 
       if event.all_day?
         event.starts_at = event_date.beginning_of_day
         event.ends_at = event_date.end_of_day
-        return
+        return true
       end
 
       starts_at = parse_event_time(event_date, input[:start_time])
@@ -48,6 +47,8 @@ module Events
       event.ends_at = ends_at
       event.errors.add(:starts_at, "time is required") if starts_at.blank?
       event.errors.add(:ends_at, "time is required") if ends_at.blank?
+
+      starts_at.present? && ends_at.present?
     end
 
     def parse_event_date

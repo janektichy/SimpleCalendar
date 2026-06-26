@@ -34,12 +34,6 @@ export default class extends Controller {
     }
   }
 
-  closeCreateFromBackdrop(event) {
-    if (this.hasOverlayTarget && event.target === this.overlayTarget) {
-      this.closeCreate()
-    }
-  }
-
   // Edit event modal
 
   openEdit() {
@@ -55,12 +49,6 @@ export default class extends Controller {
     }
   }
 
-  closeEditFromBackdrop(event) {
-    if (this.hasEditOverlayTarget && event.target === this.editOverlayTarget) {
-      this.closeEdit()
-    }
-  }
-
   // Delete confirmation modal
 
   openDelete() {
@@ -72,12 +60,6 @@ export default class extends Controller {
   closeDelete() {
     if (this.hasDeleteOverlayTarget) {
       this.hideOverlay(this.deleteOverlayTarget)
-    }
-  }
-
-  closeDeleteFromBackdrop(event) {
-    if (this.hasDeleteOverlayTarget && event.target === this.deleteOverlayTarget) {
-      this.closeDelete()
     }
   }
 
