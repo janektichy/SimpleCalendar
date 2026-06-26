@@ -124,6 +124,7 @@
 }
 
 .calendar-week-view__viewport {
+  position: relative;
   height: min(var(--week-viewport-height), calc(var(--hour-height) * 24));
   overflow-y: scroll;
   overflow-x: auto;
@@ -272,8 +273,9 @@
 }
 
 .calendar-week-view__popover-layer {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  height: 0;
+  min-width: 784px;
   z-index: 29;
   pointer-events: none;
 }

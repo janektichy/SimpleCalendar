@@ -33,6 +33,7 @@
     <% hour_height = 64 %>
     <div class="calendar-week-view" style="--hour-height: <%= hour_height %>px;" role="grid" aria-label="Weekly calendar" data-controller="week-calendar-scroll" data-week-calendar-scroll-hour-value="6" data-week-calendar-scroll-hour-height-value="<%= hour_height %>">
       <div class="calendar-week-view__viewport" data-week-calendar-scroll-target="viewport">
+        <div class="calendar-week-view__popover-layer"></div>
         <div class="calendar-week-view__header">
           <div class="calendar-week-view__corner" aria-hidden="true"></div>
           <div class="calendar-week-view__days">
@@ -135,7 +136,6 @@
           </div>
         </div>
       </div>
-      <div class="calendar-week-view__popover-layer"></div>
     </div>
   <% else %>
     <div class="calendar-weekdays">

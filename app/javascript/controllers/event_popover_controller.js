@@ -61,6 +61,7 @@ export default class extends Controller {
     const scrollViewport = this.element.closest(".calendar-week-view__viewport")
     const viewportRect = scrollViewport?.getBoundingClientRect()
     const weekViewRect = weekView.getBoundingClientRect()
+    const popoverLayerRect = popoverLayer.getBoundingClientRect()
     const visibleTop = viewportRect?.top ?? 0
     const visibleBottom = viewportRect?.bottom ?? window.innerHeight
     let top
@@ -71,14 +72,17 @@ export default class extends Controller {
       top = Math.max(triggerRect.top, visibleTop) - weekViewRect.top
     }
 
+    top += weekViewRect.top - popoverLayerRect.top
+
     const left = this.element.classList.contains("event-popover--left")
       ? triggerRect.left - weekViewRect.left - panelRect.width - gap
       : triggerRect.right - weekViewRect.left + gap
+    const layerLeft = left + weekViewRect.left - popoverLayerRect.left
 
     this.element.style.setProperty("--week-popover-top", `${top}px`)
-    this.element.style.setProperty("--week-popover-left", `${left}px`)
+    this.element.style.setProperty("--week-popover-left", `${layerLeft}px`)
     panel.style.setProperty("--week-popover-top", `${top}px`)
-    panel.style.setProperty("--week-popover-left", `${left}px`)
+    panel.style.setProperty("--week-popover-left", `${layerLeft}px`)
     this.prepareLayeredPanelActions(panel)
     panel.classList.add("event-popover__panel--week-layered")
   }
