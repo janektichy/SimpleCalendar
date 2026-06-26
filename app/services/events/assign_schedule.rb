@@ -42,6 +42,7 @@ module Events
 
       starts_at = parse_event_time(event_date, input[:start_time])
       ends_at = parse_event_time(event_date, input[:end_time])
+      ends_at += 1.day if end_time_midnight?(ends_at)
 
       event.starts_at = starts_at
       event.ends_at = ends_at
@@ -65,6 +66,10 @@ module Events
       return if raw_time.blank?
 
       Time.zone.parse("#{date} #{raw_time}")
+    end
+
+    def end_time_midnight?(ends_at)
+      ends_at.present? && ends_at.hour.zero? && ends_at.min.zero? && ends_at.sec.zero?
     end
   end
 end
