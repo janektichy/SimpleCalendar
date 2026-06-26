@@ -43,6 +43,7 @@
   font-weight: 600;
   color: var(--muted);
   text-decoration: none;
+  background-clip: padding-box;
 }
 
 .calendar-shell__nav-button:hover {
@@ -69,6 +70,11 @@
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
+  background-clip: padding-box;
+}
+
+.calendar-shell .button {
+  background-clip: padding-box;
 }
 
 .calendar-shell__today-button:hover {
@@ -383,8 +389,8 @@
 
 .calendar-cell__events {
   position: absolute;
-  left: 0.5rem;
-  right: 0.5rem;
+  left: 0.625rem;
+  right: 0.625rem;
   top: 2.1rem;
   display: flex;
   flex-direction: column;

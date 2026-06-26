@@ -220,7 +220,7 @@ a {
 .sidebar__user {
   font-size: 0.88rem;
   color: var(--muted);
-  word-break: break-all;
+  word-break: keep-all;
 }
 
 .main {
@@ -258,12 +258,14 @@ a {
 }
 
 .event-chip__title {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .event-chip__time {
+  flex: 0 0 auto;
   font-variant-numeric: tabular-nums;
   opacity: 0.9;
 }
@@ -690,6 +692,10 @@ a {
   display: flex;
   justify-content: flex-end;
   gap: 0.6rem;
+}
+
+.event-form__actions .button {
+  background-clip: padding-box;
 }
 
 /* Accessibility Utilities */
