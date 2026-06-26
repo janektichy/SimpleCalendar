@@ -68,6 +68,8 @@ export default class extends Controller {
 
     if (this.element.classList.contains("event-popover--all-day")) {
       top = Math.min(visibleTop + 100, visibleBottom - panelRect.height - gap) - weekViewRect.top
+    } else if (this.opensAtOrAfterHour(17, weekView)) {
+      top = triggerRect.bottom - panelRect.height - weekViewRect.top
     } else {
       top = Math.max(triggerRect.top, visibleTop) - weekViewRect.top
     }
@@ -85,6 +87,16 @@ export default class extends Controller {
     panel.style.setProperty("--week-popover-left", `${layerLeft}px`)
     this.prepareLayeredPanelActions(panel)
     panel.classList.add("event-popover__panel--week-layered")
+  }
+
+  opensAtOrAfterHour(hour, weekView) {
+    const hourHeight = Number.parseFloat(getComputedStyle(weekView).getPropertyValue("--hour-height"))
+    const dayColumn = this.element.closest(".calendar-week-view__day-column")
+    if (!hourHeight || !dayColumn) return false
+
+    const triggerTop = this.element.getBoundingClientRect().top - dayColumn.getBoundingClientRect().top
+
+    return triggerTop >= hour * hourHeight
   }
 
   clearWeekPopoverPosition() {
