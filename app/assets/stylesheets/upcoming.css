@@ -147,6 +147,7 @@
 .upcoming-calendar__day:hover {
   border-color: var(--border-strong);
   background: #ffffff;
+  color: black;
 }
 
 .upcoming-calendar__day--muted {
