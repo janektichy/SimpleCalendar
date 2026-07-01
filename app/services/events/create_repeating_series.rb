@@ -1,29 +1,40 @@
 module Events
   class CreateRepeatingSeries
-    OCCURRENCES_COUNT = 24
+    MAX_OCCURRENCES_COUNT = 60
 
-    def self.call(user:, base_event:, event_attributes:, input:)
-      new(user, base_event, event_attributes, input).call
+    def self.call(user:, base_event:, event_attributes:, input:, anchor_event: nil)
+      new(user, base_event, event_attributes, input, anchor_event).call
     end
 
-    def initialize(user, base_event, event_attributes, input)
+    def initialize(user, base_event, event_attributes, input, anchor_event)
       @user = user
       @base_event = base_event
       @event_attributes = event_attributes
       @input = input
+      @anchor_event = anchor_event || base_event
     end
 
     def call
-      series = user.event_series.new(series_params)
+      events = build_repeated_events
+      series = user.event_series.new(series_params(events.size))
 
-      unless base_event.valid? && series.valid?
+      if repeat_ends_on.blank?
+        base_event.errors.add(:repeat_ends_on, "is required")
+      elsif repeat_ends_on < Time.zone.today
+        base_event.errors.add(:repeat_ends_on, "cannot be in the past")
+      end
+
+      unless events.all?(&:valid?) && series.valid?
         merge_errors(base_event, series)
         return false
       end
 
       ActiveRecord::Base.transaction do
         series.save!
-        build_repeated_events(series).each(&:save!)
+        events.each do |event|
+          event.event_series = series
+          event.save!
+        end
       end
 
       true
@@ -34,35 +45,57 @@ module Events
 
     private
 
-    attr_reader :user, :base_event, :event_attributes, :input
+    attr_reader :user, :base_event, :event_attributes, :input, :anchor_event
 
-    def series_params
+    def series_params(occurrences_count)
       {
         repeat_frequency: normalized_repeat_frequency,
-        occurrences_count: OCCURRENCES_COUNT
+        repeat_ends_on: repeat_ends_on,
+        occurrences_count: occurrences_count
       }
     end
 
+    def repeat_ends_on
+      @repeat_ends_on ||= parse_repeat_ends_on
+    end
+
+    def parse_repeat_ends_on
+      value = input_value(:repeat_ends_on).to_s
+      return if value.blank?
+
+      Date.iso8601(value)
+    rescue Date::Error
+      nil
+    end
+
     def normalized_repeat_frequency
-      frequency = input[:repeat_frequency].to_s
+      frequency = input_value(:repeat_frequency).to_s
       return frequency if EventSeries.repeat_frequencies.key?(frequency)
 
       "weekly"
     end
 
-    def build_repeated_events(series)
-      (1..series.occurrences_count).map do |step|
-        starts_at = shifted_time(base_event.starts_at, series.repeat_frequency, step - 1)
-        ends_at = shifted_time(base_event.ends_at, series.repeat_frequency, step - 1)
+    def build_repeated_events
+      return [] if repeat_ends_on.blank? || anchor_event.starts_at.blank? || anchor_event.ends_at.blank?
 
-        user.events.new(
+      events = []
+
+      (0...MAX_OCCURRENCES_COUNT).each do |step|
+        starts_at = shifted_time(anchor_event.starts_at, normalized_repeat_frequency, step)
+        break if starts_at.to_date > repeat_ends_on
+
+        ends_at = shifted_time(anchor_event.ends_at, normalized_repeat_frequency, step)
+
+        events << Event.new(
           event_attributes.merge(
+            user: user,
             starts_at: starts_at,
-            ends_at: ends_at,
-            event_series: series
+            ends_at: ends_at
           )
         )
       end
+
+      events
     end
 
     def shifted_time(value, frequency, step)
@@ -79,6 +112,12 @@ module Events
       series.errors.full_messages.each do |message|
         event.errors.add(:base, message)
       end
+    end
+
+    def input_value(key)
+      return input[key.to_s] if input.key?(key.to_s)
+
+      input[key]
     end
   end
 end

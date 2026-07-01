@@ -19,11 +19,12 @@ module Events
     attr_reader :event, :input
 
     def assign_form_state
-      event.repeat_event = input[:repeat_event]
-      event.repeat_frequency = input[:repeat_frequency]
-      event.event_date = input[:event_date]
-      event.start_time = input[:start_time]
-      event.end_time = input[:end_time]
+      event.repeat_event = input_value(:repeat_event)
+      event.repeat_frequency = input_value(:repeat_frequency)
+      event.repeat_ends_on = input_value(:repeat_ends_on)
+      event.event_date = input_value(:event_date)
+      event.start_time = input_value(:start_time)
+      event.end_time = input_value(:end_time)
     end
 
     def assign_schedule
@@ -40,8 +41,8 @@ module Events
         return true
       end
 
-      starts_at = parse_event_time(event_date, input[:start_time])
-      ends_at = parse_event_time(event_date, input[:end_time])
+      starts_at = parse_event_time(event_date, input_value(:start_time))
+      ends_at = parse_event_time(event_date, input_value(:end_time))
       ends_at += 1.day if end_time_midnight?(ends_at)
 
       event.starts_at = starts_at
@@ -53,7 +54,7 @@ module Events
     end
 
     def parse_event_date
-      value = input[:event_date].to_s
+      value = input_value(:event_date).to_s
       return if value.blank?
 
       Date.iso8601(value)
@@ -70,6 +71,12 @@ module Events
 
     def end_time_midnight?(ends_at)
       ends_at.present? && ends_at.hour.zero? && ends_at.min.zero? && ends_at.sec.zero?
+    end
+
+    def input_value(key)
+      return input[key.to_s] if input.key?(key.to_s)
+
+      input[key]
     end
   end
 end

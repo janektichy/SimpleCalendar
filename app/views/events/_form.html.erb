@@ -1,19 +1,19 @@
 <% selected_date = event.event_date.presence || event.starts_at&.to_date&.iso8601 || Time.zone.today.iso8601 %>
 <% selected_start_time = event.start_time.presence || event.starts_at&.strftime("%H:%M") || "09:00" %>
 <% selected_end_time = event.end_time.presence || event.ends_at&.strftime("%H:%M") || "10:00" %>
-<% repeat_checked = event.repeat_event.to_s == "1" %>
+<% selected_repeat_ends_on = event.repeat_ends_on.presence || event.event_series&.repeat_ends_on&.iso8601 || (Date.iso8601(selected_date) + 12.weeks).iso8601 %>
+<% repeat_checked = event.repeat_event.to_s == "1" || event.event_series.present? %>
 
 <% form_url = local_assigns.fetch(:form_url, event.persisted? ? event_path(event) : events_path) %>
 <% form_method = local_assigns.fetch(:form_method, event.persisted? ? :patch : :post) %>
 <% submit_label = local_assigns.fetch(:submit_label, event.persisted? ? "Save changes" : "Create event") %>
 <% cancel_action = local_assigns.fetch(:cancel_action, event.persisted? ? "click->modal#closeEdit" : "click->modal#closeCreate") %>
+<% return_params = local_assigns.fetch(:return_params, params.permit(:view, :month, :week, :date, :days).to_h) %>
 
 <%= form_with model: event, url: form_url, method: form_method, class: "event-form", data: { turbo: false, controller: "event-form", action: "reset->event-form#refreshState" } do |form| %>
-  <%= hidden_field_tag :view, params[:view] if params[:view].present? %>
-  <%= hidden_field_tag :month, params[:month] if params[:month].present? %>
-  <%= hidden_field_tag :week, params[:week] if params[:week].present? %>
-  <%= hidden_field_tag :date, params[:date] if params[:date].present? %>
-  <%= hidden_field_tag :days, params[:days] if params[:days].present? %>
+  <% return_params.each do |name, value| %>
+    <%= hidden_field_tag name, value if value.present? %>
+  <% end %>
 
   <div class="event-form__grid">
     <div class="form__group event-form__group event-form__full">
@@ -60,7 +60,11 @@
   <div class="event-form__repeat" data-event-form-target="repeatFields">
     <div class="form__group">
       <%= form.label :repeat_frequency, "Repeat" %>
-      <%= form.select :repeat_frequency, options_for_select([["Daily", "daily"], ["Weekly", "weekly"], ["Monthly", "monthly"]], event.repeat_frequency || "weekly"), {}, data: { event_form_target: "repeatInput" } %>
+      <%= form.select :repeat_frequency, options_for_select([["Daily", "daily"], ["Weekly", "weekly"], ["Monthly", "monthly"]], event.repeat_frequency || event.event_series&.repeat_frequency || "weekly"), {}, data: { event_form_target: "repeatInput" } %>
+    </div>
+    <div class="form__group">
+      <%= form.label :repeat_ends_on, "Repeat until" %>
+      <%= form.date_field :repeat_ends_on, value: selected_repeat_ends_on, data: { event_form_target: "repeatInput" } %>
     </div>
     <p class="event-form__repeat-hint">Weekly repeats on the same weekday. Monthly repeats on the same day of month.</p>
   </div>

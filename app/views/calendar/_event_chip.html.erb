@@ -49,7 +49,7 @@
           end %>
           <div class="event-popover__row">
             <span class="event-popover__label">Repeats</span>
-            <p class="event-popover__value">Repeats <%= event.event_series.repeat_frequency %> (<%= repeat_spec %>)</p>
+            <p class="event-popover__value">Repeats <%= event.event_series.repeat_frequency %> (<%= repeat_spec %>) until <%= event.event_series.repeat_ends_on.strftime("%B %-d, %Y") %></p>
           </div>
         <% end %>
       </div>

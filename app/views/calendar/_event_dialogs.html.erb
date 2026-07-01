@@ -35,6 +35,6 @@
       <button type="button" class="event-modal__close" aria-label="Close" data-action="click->modal#closeEdit">×</button>
     </div>
     <% form_event = (@event_with_errors&.id == event.id ? @event_with_errors : event) %>
-    <%= render "events/form", event: form_event, form_url: event_path(event), form_method: :patch, submit_label: "Save changes" %>
+    <%= render "events/form", event: form_event, form_url: event_path(event), form_method: :patch, submit_label: "Save changes", return_params: return_params %>
   </div>
 </div>

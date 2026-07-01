@@ -119,7 +119,7 @@
         <h2 id="upcoming-event-modal-title">Create event</h2>
         <button type="button" class="event-modal__close" aria-label="Close" data-action="click->modal#closeCreate">×</button>
       </div>
-      <%= render "events/form", event: @new_event %>
+      <%= render "events/form", event: @new_event, return_params: { date: selected_date.iso8601, days: days_count } %>
     </div>
   </div>
 </div>

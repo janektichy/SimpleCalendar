@@ -1,7 +1,7 @@
 class Event < ApplicationRecord
   COLORS = %w[white slate blue emerald amber rose violet cyan lime orange indigo].freeze
 
-  attr_accessor :repeat_event, :repeat_frequency, :event_date, :start_time, :end_time
+  attr_accessor :repeat_event, :repeat_frequency, :repeat_ends_on, :event_date, :start_time, :end_time
 
   belongs_to :user
   belongs_to :event_series, optional: true

@@ -23,7 +23,7 @@ class EventsController < ApplicationController
   def update
     schedule_assigned = Events::AssignSchedule.call(event: @event, input: event_input)
 
-    if schedule_assigned && @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at))
+    if schedule_assigned && update_event
       redirect_to event_return_path, notice: "Event updated."
     else
       render_return_page_with_errors(@event)
@@ -71,6 +71,29 @@ class EventsController < ApplicationController
     else
       render_return_page_with_errors(base_event)
     end
+  end
+
+  # Rebuilds the full series when repeat settings are present; otherwise updates one event.
+  def update_event
+    return update_repeated_event if repeat_event?
+
+    @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at))
+  end
+
+  def update_repeated_event
+    series = @event.event_series
+    anchor_event = series&.events&.chronological&.first || @event
+
+    created = Events::CreateRepeatingSeries.call(
+      user: current_user,
+      base_event: @event,
+      event_attributes: base_event_params,
+      input: event_input,
+      anchor_event: anchor_event
+    )
+
+    series&.destroy! if created
+    created
   end
 
   # Rebuilds the page that submitted the form so validation errors appear in context.
@@ -127,7 +150,7 @@ class EventsController < ApplicationController
 
   # Whitelists event form fields, including virtual date/time inputs.
   def event_params
-    params.require(:event).permit(:title, :description, :all_day, :color, :event_date, :start_time, :end_time, :repeat_event, :repeat_frequency)
+    params.require(:event).permit(:title, :description, :all_day, :color, :event_date, :start_time, :end_time, :repeat_event, :repeat_frequency, :repeat_ends_on)
   end
 
   # Preserves calendar position after redirects and validation errors.

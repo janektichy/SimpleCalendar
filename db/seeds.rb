@@ -99,8 +99,10 @@ weekly_templates = [
 ]
 
 weekly_templates.each do |template|
-  series = demo_user.event_series.create!(repeat_frequency: "weekly", occurrences_count: 8)
   event_date = next_matching_date(seed_start, template[:wday])
+  repeat_ends_on = seed_end
+  occurrences_count = 1 + ((repeat_ends_on - event_date).to_i / 7)
+  series = demo_user.event_series.create!(repeat_frequency: "weekly", repeat_ends_on: repeat_ends_on, occurrences_count: occurrences_count)
 
   while event_date <= seed_end
     create_event!(demo_user, **template.except(:wday), date: event_date, series: series)
@@ -245,7 +247,7 @@ relative_templates.each do |template|
   create_event!(demo_user, **template.except(:offset), date: date)
 end
 
-medication_series = demo_user.event_series.create!(repeat_frequency: "daily", occurrences_count: 10)
+medication_series = demo_user.event_series.create!(repeat_frequency: "daily", repeat_ends_on: today + 9.days, occurrences_count: 10)
 10.times do |index|
   create_event!(
     demo_user,

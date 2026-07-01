@@ -45,6 +45,10 @@
   justify-content: flex-end;
 }
 
+.upcoming-shell .button {
+  background-clip: padding-box;
+}
+
 /* Upcoming Range Selector */
 
 .upcoming-range {
