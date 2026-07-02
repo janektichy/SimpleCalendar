@@ -23,7 +23,7 @@ module Events
 
       if repeat_ends_on.blank?
         base_event.errors.add(:repeat_ends_on, "is required")
-      elsif repeat_ends_on < Time.zone.today
+      elsif repeat_ends_on < anchor_event.starts_at.to_date
         base_event.errors.add(:repeat_ends_on, "cannot be in the past")
       end
 

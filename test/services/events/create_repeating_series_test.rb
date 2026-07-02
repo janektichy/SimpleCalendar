@@ -142,7 +142,7 @@ module Events
       assert_equal 1, user.events.where(event_series: series).count
     end
 
-    test "rejects repeat end date in the past" do
+    test "rejects repeat end date before the anchor event" do
       user = users(:one)
       event = user.events.new(title: "Planning", color: "blue")
       input = {
@@ -150,7 +150,7 @@ module Events
         start_time: "09:00",
         end_time: "10:00",
         repeat_frequency: "weekly",
-        repeat_ends_on: (Time.zone.today - 1.day).iso8601
+        repeat_ends_on: "2026-06-30"
       }
       AssignSchedule.call(event: event, input: input)
 
