@@ -31,7 +31,7 @@ Project is mostly focused on trying out basic Ruby on Rails principles, while al
 
 ## Requirements
 
-- Ruby installed locally
+- Ruby 4.0.5 installed locally
 - Bundler installed locally
 - SQLite available locally
 
