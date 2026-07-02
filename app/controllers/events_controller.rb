@@ -77,22 +77,22 @@ class EventsController < ApplicationController
   def update_event
     return update_repeated_event if repeat_event?
 
-    @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at))
+    @event.event_series&.destroy!
+    @event.update(base_event_params.merge(starts_at: @event.starts_at, ends_at: @event.ends_at, event_series: nil))
   end
 
   def update_repeated_event
     series = @event.event_series
-    anchor_event = series&.events&.chronological&.first || @event
 
     created = Events::CreateRepeatingSeries.call(
       user: current_user,
       base_event: @event,
       event_attributes: base_event_params,
       input: event_input,
-      anchor_event: anchor_event
+      anchor_event: @event,
+      series: series
     )
 
-    series&.destroy! if created
     created
   end
 

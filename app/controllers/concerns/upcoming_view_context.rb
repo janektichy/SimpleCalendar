@@ -11,7 +11,15 @@ module UpcomingViewContext
     @upcoming_month_start = @selected_date.beginning_of_month
     @upcoming_calendar_days = (@upcoming_month_start.beginning_of_week(:monday)..@upcoming_month_start.end_of_month.end_of_week(:monday)).to_a
     @today = today
-    @events_by_date = current_user.events.where(starts_at: @selected_date.beginning_of_day..@upcoming_days.last.end_of_day).chronological.group_by { |event| event.starts_at.to_date }
+    @events_by_date = upcoming_events_for_range(@selected_date, @upcoming_days.last).group_by { |event| event.starts_at.to_date }
+  end
+
+  def upcoming_events_for_range(event_start, event_end)
+    range_start = event_start.beginning_of_day
+    range_end = event_end.end_of_day
+    events = current_user.events.includes(:event_series).where("starts_at <= ? AND (event_series_id IS NOT NULL OR ends_at >= ?)", range_end, range_start).chronological
+
+    Events::ExpandRepeatingEvents.call(events: events, range_start: range_start, range_end: range_end)
   end
 
   def selected_upcoming_date(today)

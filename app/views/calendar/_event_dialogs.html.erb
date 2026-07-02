@@ -17,7 +17,7 @@
     </p>
     <div class="event-delete__dialog-actions">
       <button type="button" class="button event-delete__cancel" data-action="click->modal#closeDelete">Cancel</button>
-      <%= form_with url: event_path(event), method: :delete, data: { turbo: false } do |form| %>
+      <%= form_with url: event_path(event.to_model), method: :delete, data: { turbo: false } do |form| %>
         <%= hidden_field_tag :delete_scope, event.event_series.present? ? "series" : "single" %>
         <% return_params.each do |name, value| %>
           <%= hidden_field_tag name, value if value.present? %>
@@ -34,7 +34,7 @@
       <h2 id="<%= edit_title_id %>">Edit event</h2>
       <button type="button" class="event-modal__close" aria-label="Close" data-action="click->modal#closeEdit">×</button>
     </div>
-    <% form_event = (@event_with_errors&.id == event.id ? @event_with_errors : event) %>
-    <%= render "events/form", event: form_event, form_url: event_path(event), form_method: :patch, submit_label: "Save changes", return_params: return_params %>
+    <% form_event = (@event_with_errors&.id == event.to_model.id ? @event_with_errors : event.to_model) %>
+    <%= render "events/form", event: form_event, form_url: event_path(event.to_model), form_method: :patch, submit_label: "Save changes", return_params: return_params %>
   </div>
 </div>

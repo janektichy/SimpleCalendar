@@ -2,21 +2,24 @@ module Events
   class CreateRepeatingSeries
     MAX_OCCURRENCES_COUNT = 60
 
-    def self.call(user:, base_event:, event_attributes:, input:, anchor_event: nil)
-      new(user, base_event, event_attributes, input, anchor_event).call
+    def self.call(user:, base_event:, event_attributes:, input:, anchor_event: nil, series: nil)
+      new(user, base_event, event_attributes, input, anchor_event, series).call
     end
 
-    def initialize(user, base_event, event_attributes, input, anchor_event)
+    def initialize(user, base_event, event_attributes, input, anchor_event, series)
       @user = user
       @base_event = base_event
       @event_attributes = event_attributes
       @input = input
       @anchor_event = anchor_event || base_event
+      @series = series || user.event_series.new
     end
 
     def call
-      events = build_repeated_events
-      series = user.event_series.new(series_params(events.size))
+      series.assign_attributes(series_params(occurrences_count))
+
+      base_event.assign_attributes(event_attributes.merge(user: user))
+      base_event_valid = base_event.valid?
 
       if repeat_ends_on.blank?
         base_event.errors.add(:repeat_ends_on, "is required")
@@ -24,17 +27,15 @@ module Events
         base_event.errors.add(:repeat_ends_on, "cannot be in the past")
       end
 
-      unless events.all?(&:valid?) && series.valid?
+      unless base_event_valid && base_event.errors[:repeat_ends_on].empty? && series.valid?
         merge_errors(base_event, series)
         return false
       end
 
       ActiveRecord::Base.transaction do
         series.save!
-        events.each do |event|
-          event.event_series = series
-          event.save!
-        end
+        base_event.event_series = series
+        base_event.save!
       end
 
       true
@@ -45,7 +46,7 @@ module Events
 
     private
 
-    attr_reader :user, :base_event, :event_attributes, :input, :anchor_event
+    attr_reader :user, :base_event, :event_attributes, :input, :anchor_event, :series
 
     def series_params(occurrences_count)
       {
@@ -75,27 +76,19 @@ module Events
       "weekly"
     end
 
-    def build_repeated_events
-      return [] if repeat_ends_on.blank? || anchor_event.starts_at.blank? || anchor_event.ends_at.blank?
+    def occurrences_count
+      return 0 if repeat_ends_on.blank? || anchor_event.starts_at.blank? || anchor_event.ends_at.blank?
 
-      events = []
+      count = 0
 
       (0...MAX_OCCURRENCES_COUNT).each do |step|
         starts_at = shifted_time(anchor_event.starts_at, normalized_repeat_frequency, step)
         break if starts_at.to_date > repeat_ends_on
 
-        ends_at = shifted_time(anchor_event.ends_at, normalized_repeat_frequency, step)
-
-        events << Event.new(
-          event_attributes.merge(
-            user: user,
-            starts_at: starts_at,
-            ends_at: ends_at
-          )
-        )
+        count += 1
       end
 
-      events
+      count
     end
 
     def shifted_time(value, frequency, step)

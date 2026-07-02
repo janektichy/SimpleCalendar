@@ -1,6 +1,6 @@
 class EventSeries < ApplicationRecord
   belongs_to :user
-  has_many :events, dependent: :destroy
+  has_one :event, dependent: :destroy
 
   enum :repeat_frequency, { daily: "daily", weekly: "weekly", monthly: "monthly" }
 

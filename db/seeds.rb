@@ -104,10 +104,7 @@ weekly_templates.each do |template|
   occurrences_count = 1 + ((repeat_ends_on - event_date).to_i / 7)
   series = demo_user.event_series.create!(repeat_frequency: "weekly", repeat_ends_on: repeat_ends_on, occurrences_count: occurrences_count)
 
-  while event_date <= seed_end
-    create_event!(demo_user, **template.except(:wday), date: event_date, series: series)
-    event_date += 1.week
-  end
+  create_event!(demo_user, **template.except(:wday), date: event_date, series: series)
 end
 
 monthly_templates = [
@@ -248,18 +245,16 @@ relative_templates.each do |template|
 end
 
 medication_series = demo_user.event_series.create!(repeat_frequency: "daily", repeat_ends_on: today + 9.days, occurrences_count: 10)
-10.times do |index|
-  create_event!(
-    demo_user,
-    date: today + index.days,
-    title: "Daily medication reminder",
-    starts: [ 8, 0 ],
-    ends_at: [ 8, 10 ],
-    color: "violet",
-    description: "Short recurring morning reminder.",
-    series: medication_series
-  )
-end
+create_event!(
+  demo_user,
+  date: today,
+  title: "Daily medication reminder",
+  starts: [ 8, 0 ],
+  ends_at: [ 8, 10 ],
+  color: "violet",
+  description: "Short recurring morning reminder.",
+  series: medication_series
+)
 
 puts "Seeded demo account: example.user@example.com / examplepassword"
 puts "Created #{demo_user.events.count} demo events across #{demo_user.event_series.count} recurring series."

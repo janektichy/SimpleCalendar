@@ -1,4 +1,4 @@
-<div data-controller="modal" data-modal-open-value="<%= @event_with_errors&.id == event.id %>">
+<div data-controller="modal" data-modal-open-value="<%= @event_with_errors&.id == event.to_model.id %>">
   <% popover_context = local_assigns.fetch(:popover_context, :month) %>
   <% popover_classes = ["event-popover"] %>
   <% popover_classes << "event-popover--week" if popover_context.to_s == "week" %>
