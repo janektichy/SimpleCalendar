@@ -43,13 +43,13 @@ Install dependencies:
 bundle install
 ```
 
-Prepare the database:
+Prepare the database and demo seed data:
 
 ```sh
 ruby bin/rails db:prepare
 ```
 
-Add demo data to the database:
+If the database already exists and you only want to add or refresh the demo data, run:
 
 ```sh
 ruby bin/rails db:seed
@@ -69,7 +69,7 @@ http://localhost:3000
 
 ## Demo Account
 
-Running `ruby bin/rails db:seed` creates a demo account and fills it with sample calendar data for the current and next month.
+Running `ruby bin/rails db:prepare` on a fresh setup creates the database and loads the seed data. Running `ruby bin/rails db:seed` separately creates or refreshes the demo account and fills it with sample calendar data for the current and next month.
 
 Use this login to skip creating your own mock data:
 
